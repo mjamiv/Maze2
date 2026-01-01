@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Runner Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; 
+            overflow: hidden;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); } 50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); } }
+        .shake { animation: shake 0.3s ease-in-out; }
+        .glow { animation: glow 2s ease-in-out infinite; }
+        .character-btn:hover { transform: scale(1.1) translateY(-5px); }
+        .character-btn { transition: all 0.2s ease; }
+        #game-canvas { image-rendering: pixelated; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+    <div id="app" class="relative">
+        <!-- Main Menu -->
+        <div id="menu-screen" class="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-700">
+            <h1 class="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">Maze Runner Pro</h1>
+            <p class="text-gray-400 mb-8">Navigate the maze, collect gems, avoid hazards!</p>
+            
+            <div class="bg-gray-800/50 p-6 rounded-xl mb-6 max-w-md">
+                <h3 class="text-lg font-semibold mb-3 text-blue-400">How to Play</h3>
+                <div class="grid grid-cols-2 gap-3 text-sm text-gray-300">
+                    <div class="flex items-center gap-2"><span class="bg-gray-700 px-2 py-1 rounded">↑↓←→</span> Move</div>
+                    <div class="flex items-center gap-2"><span class="bg-gray-700 px-2 py-1 rounded">WASD</span> Move</div>
+                    <div class="flex items-center gap-2"><span class="bg-gray-700 px-2 py-1 rounded">Space</span> Destroy hazard</div>
+                    <div class="flex items-center gap-2"><span class="bg-gray-700 px-2 py-1 rounded">P/Esc</span> Pause</div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-700 text-sm text-gray-400">
+                    <p>🟢 Goal | 💎 Gems (+10) | ⚡ Speed | ⏰ Time | 🔴 Hazards</p>
+                </div>
+            </div>
+            
+            <h3 class="text-lg font-semibold mb-4 text-gray-300">Choose Your Character</h3>
+            <div id="characters" class="flex gap-4 mb-6">
+                <button class="character-btn flex flex-col items-center p-4 bg-gray-700 rounded-xl hover:bg-gray-600 cursor-pointer border-2 border-transparent hover:border-blue-500" data-char="🧙">
+                    <span class="text-5xl mb-2">🧙</span>
+                    <span class="text-sm">Wizard</span>
+                </button>
+                <button class="character-btn flex flex-col items-center p-4 bg-gray-700 rounded-xl hover:bg-gray-600 cursor-pointer border-2 border-transparent hover:border-blue-500" data-char="🦊">
+                    <span class="text-5xl mb-2">🦊</span>
+                    <span class="text-sm">Fox</span>
+                </button>
+                <button class="character-btn flex flex-col items-center p-4 bg-gray-700 rounded-xl hover:bg-gray-600 cursor-pointer border-2 border-transparent hover:border-blue-500" data-char="🤖">
+                    <span class="text-5xl mb-2">🤖</span>
+                    <span class="text-sm">Robot</span>
+                </button>
+                <button class="character-btn flex flex-col items-center p-4 bg-gray-700 rounded-xl hover:bg-gray-600 cursor-pointer border-2 border-transparent hover:border-blue-500" data-char="👻">
+                    <span class="text-5xl mb-2">👻</span>
+                    <span class="text-sm">Ghost</span>
+                </button>
+            </div>
+            
+            <div class="flex gap-4 mb-4">
+                <button id="easy-btn" class="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg transition">Easy</button>
+                <button id="medium-btn" class="px-6 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg transition">Medium</button>
+                <button id="hard-btn" class="px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg transition">Hard</button>
+            </div>
+            
+            <p class="text-gray-500 text-sm">High Score: <span id="high-score">0</span></p>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden flex flex-col items-center">
+            <div class="flex justify-between items-center w-full max-w-lg mb-2 px-2">
+                <div class="flex gap-4">
+                    <span id="score" class="text-xl font-bold">Score: 0</span>
+                    <span id="combo" class="text-lg text-yellow-400 hidden">x2 Combo!</span>
+                </div>
+                <div class="flex gap-4 items-center">
+                    <span id="level" class="text-lg text-purple-400">Level 1</span>
+                    <span id="timer" class="text-xl font-bold">60s</span>
+                </div>
+            </div>
+            
+            <div class="relative">
+                <canvas id="game-canvas" class="rounded-lg shadow-2xl glow"></canvas>
+                
+                <!-- Countdown Overlay -->
+                <div id="countdown" class="hidden absolute inset-0 bg-black/70 flex items-center justify-center rounded-lg">
+                    <span class="text-8xl font-bold text-white"></span>
+                </div>
+                
+                <!-- Level Complete -->
+                <div id="level-complete" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg">
+                    <h2 class="text-4xl font-bold text-green-400 mb-4">Level Complete!</h2>
+                    <p class="text-2xl text-white mb-2">+<span id="level-bonus">0</span> Time Bonus</p>
+                    <p class="text-lg text-gray-300 mb-6">Next level in <span id="next-level-timer">3</span>...</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 mt-4">
+                <div id="powerup-display" class="flex gap-2">
+                    <span id="speed-indicator" class="hidden px-3 py-1 bg-yellow-500/30 text-yellow-400 rounded-full text-sm">⚡ Speed</span>
+                </div>
+            </div>
+            
+            <!-- Mobile Controls -->
+            <div id="mobile-controls" class="hidden mt-4 grid grid-cols-3 gap-2 w-48">
+                <div></div>
+                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="up">↑</button>
+                <div></div>
+                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="left">←</button>
+                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="action">💥</button>
+                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="right">→</button>
+                <div></div>
+                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="down">↓</button>
+                <div></div>
+            </div>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="pause-overlay" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-2xl z-10">
+            <h2 class="text-4xl font-bold mb-8">Paused</h2>
+            <button id="resume-btn" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-xl mb-4 transition">Resume</button>
+            <button id="quit-btn" class="px-8 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition">Quit to Menu</button>
+        </div>
+
+        <!-- Game Over -->
+        <div id="game-over" class="hidden absolute inset-0 bg-black/90 flex flex-col items-center justify-center rounded-2xl z-10">
+            <h2 id="game-over-title" class="text-4xl font-bold mb-4">Game Over</h2>
+            <p class="text-2xl mb-2">Final Score: <span id="final-score" class="text-yellow-400">0</span></p>
+            <p class="text-lg text-gray-400 mb-2">Level Reached: <span id="final-level">1</span></p>
+            <p id="new-high-score" class="hidden text-xl text-green-400 mb-4">🎉 New High Score!</p>
+            <div class="flex gap-4 mt-4">
+                <button id="play-again-btn" class="px-8 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-xl transition">Play Again</button>
+                <button id="menu-btn" class="px-8 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition">Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== GAME STATE =====
+        const state = {
+            canvas: null,
+            ctx: null,
+            tileSize: 32,
+            mazeWidth: 15,
+            mazeHeight: 15,
+            maze: [],
+            player: { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 },
+            goal: { x: 13, y: 13 },
+            hazards: [],
+            collectibles: [],
+            powerups: [],
+            particles: [],
+            
+            character: '🧙',
+            difficulty: 'medium',
+            gameStarted: false,
+            gamePaused: false,
+            gameOver: false,
+            
+            score: 0,
+            level: 1,
+            timeLeft: 60,
+            combo: 0,
+            comboTimer: 0,
+            lastCollectTime: 0,
+            
+            speedBoost: false,
+            speedBoostTimer: 0,
+            
+            keysPressed: {},
+            lastMoveTime: 0,
+            moveDelay: 120,
+            
+            highScore: parseInt(localStorage.getItem('mazeHighScore') || '0'),
+            soundEnabled: true,
+            audioCtx: null
+        };
+
+        // ===== AUDIO =====
+        function initAudio() {
+            state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playTone(freq, duration, type = 'sine', volume = 0.1) {
+            if (!state.soundEnabled || !state.audioCtx) return;
+            try {
+                const osc = state.audioCtx.createOscillator();
+                const gain = state.audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.value = volume;
+                gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(state.audioCtx.destination);
+                osc.start();
+                osc.stop(state.audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function playMove() { playTone(440, 0.05, 'square', 0.05); }
+        function playCollect() { 
+            playTone(880, 0.1, 'sine', 0.1); 
+            setTimeout(() => playTone(1100, 0.1, 'sine', 0.1), 50);
+        }
+        function playDestroy() { playTone(150, 0.2, 'sawtooth', 0.1); }
+        function playPowerup() { 
+            playTone(523, 0.1, 'sine', 0.1);
+            setTimeout(() => playTone(659, 0.1, 'sine', 0.1), 80);
+            setTimeout(() => playTone(784, 0.15, 'sine', 0.1), 160);
+        }
+        function playWin() {
+            [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.2, 'sine', 0.1), i * 100));
+        }
+        function playLose() {
+            [400, 350, 300, 250].forEach((f, i) => setTimeout(() => playTone(f, 0.2, 'sawtooth', 0.08), i * 150));
+        }
+
+        // ===== MAZE GENERATION =====
+        function generateMaze() {
+            const { mazeWidth, mazeHeight, level, difficulty } = state;
+            
+            // Initialize with walls
+            state.maze = Array(mazeHeight).fill().map(() => Array(mazeWidth).fill(1));
+            
+            // Recursive backtracking
+            function carve(x, y) {
+                state.maze[y][x] = 0;
+                const dirs = [
+                    { dx: 0, dy: -2 },
+                    { dx: 0, dy: 2 },
+                    { dx: -2, dy: 0 },
+                    { dx: 2, dy: 0 }
+                ].sort(() => Math.random() - 0.5);
+                
+                for (const dir of dirs) {
+                    const nx = x + dir.dx;
+                    const ny = y + dir.dy;
+                    if (nx > 0 && nx < mazeWidth - 1 && ny > 0 && ny < mazeHeight - 1 && state.maze[ny][nx] === 1) {
+                        state.maze[y + dir.dy / 2][x + dir.dx / 2] = 0;
+                        carve(nx, ny);
+                    }
+                }
+            }
+            
+            carve(1, 1);
+            
+            // Ensure start and goal are open
+            state.maze[1][1] = 0;
+            state.maze[state.goal.y][state.goal.x] = 0;
+            
+            // Add some extra paths for easier navigation
+            const extraPaths = difficulty === 'easy' ? 8 : difficulty === 'medium' ? 5 : 2;
+            for (let i = 0; i < extraPaths; i++) {
+                const x = Math.floor(Math.random() * (mazeWidth - 4)) + 2;
+                const y = Math.floor(Math.random() * (mazeHeight - 4)) + 2;
+                if (state.maze[y][x] === 1) {
+                    state.maze[y][x] = 0;
+                }
+            }
+            
+            // Generate hazards
+            const hazardCount = Math.min(3 + level, difficulty === 'easy' ? 4 : difficulty === 'hard' ? 10 : 7);
+            state.hazards = [];
+            for (let i = 0; i < hazardCount; i++) {
+                let attempts = 0;
+                while (attempts < 50) {
+                    const hx = Math.floor(Math.random() * (mazeWidth - 2)) + 1;
+                    const hy = Math.floor(Math.random() * (mazeHeight - 2)) + 1;
+                    if (state.maze[hy][hx] === 0 && 
+                        !(hx === 1 && hy === 1) && 
+                        !(hx === state.goal.x && hy === state.goal.y) &&
+                        !state.hazards.some(h => h.x === hx && h.y === hy)) {
+                        state.hazards.push({ x: hx, y: hy, pulse: Math.random() * Math.PI * 2 });
+                        break;
+                    }
+                    attempts++;
+                }
+            }
+            
+            // Generate collectibles
+            const collectibleCount = 3 + Math.floor(level / 2);
+            state.collectibles = [];
+            for (let i = 0; i < collectibleCount; i++) {
+                let attempts = 0;
+                while (attempts < 50) {
+                    const cx = Math.floor(Math.random() * (mazeWidth - 2)) + 1;
+                    const cy = Math.floor(Math.random() * (mazeHeight - 2)) + 1;
+                    if (state.maze[cy][cx] === 0 && 
+                        !(cx === 1 && cy === 1) && 
+                        !(cx === state.goal.x && cy === state.goal.y) &&
+                        !state.hazards.some(h => h.x === cx && h.y === cy) &&
+                        !state.collectibles.some(c => c.x === cx && c.y === cy)) {
+                        state.collectibles.push({ x: cx, y: cy, rotation: Math.random() * Math.PI * 2 });
+                        break;
+                    }
+                    attempts++;
+                }
+            }
+            
+            // Generate powerups
+            state.powerups = [];
+            if (Math.random() < 0.6) {
+                let attempts = 0;
+                while (attempts < 50) {
+                    const px = Math.floor(Math.random() * (mazeWidth - 2)) + 1;
+                    const py = Math.floor(Math.random() * (mazeHeight - 2)) + 1;
+                    if (state.maze[py][px] === 0 && 
+                        !(px === 1 && py === 1) && 
+                        !(px === state.goal.x && py === state.goal.y) &&
+                        !state.hazards.some(h => h.x === px && h.y === py) &&
+                        !state.collectibles.some(c => c.x === px && c.y === py)) {
+                        const type = Math.random() < 0.5 ? 'speed' : 'time';
+                        state.powerups.push({ x: px, y: py, type, pulse: 0 });
+                        break;
+                    }
+                    attempts++;
+                }
+            }
+            
+            // Verify maze is solvable
+            if (!isSolvable()) {
+                generateMaze();
+            }
+        }
+
+        function isSolvable() {
+            const visited = Array(state.mazeHeight).fill().map(() => Array(state.mazeWidth).fill(false));
+            const queue = [{ x: 1, y: 1 }];
+            visited[1][1] = true;
+            
+            while (queue.length > 0) {
+                const { x, y } = queue.shift();
+                if (x === state.goal.x && y === state.goal.y) return true;
+                
+                const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+                for (const [dx, dy] of dirs) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < state.mazeWidth && ny >= 0 && ny < state.mazeHeight &&
+                        !visited[ny][nx] && state.maze[ny][nx] === 0 &&
+                        !state.hazards.some(h => h.x === nx && h.y === ny)) {
+                        visited[ny][nx] = true;
+                        queue.push({ x: nx, y: ny });
+                    }
+                }
+            }
+            return false;
+        }
+
+        // ===== PARTICLES =====
+        function createParticles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+                const speed = 2 + Math.random() * 3;
+                state.particles.push({
+                    x: x * state.tileSize + state.tileSize / 2,
+                    y: y * state.tileSize + state.tileSize / 2,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color,
+                    size: 3 + Math.random() * 4
+                });
+            }
+        }
+
+        function updateParticles() {
+            state.particles = state.particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1; // gravity
+                p.life -= 0.03;
+                p.vx *= 0.98;
+                return p.life > 0;
+            });
+        }
+
+        // ===== MOVEMENT =====
+        function movePlayer(dx, dy) {
+            if (state.gamePaused || state.gameOver || !state.gameStarted) return;
+            if (state.player.animProgress < 1) return;
+            
+            const now = Date.now();
+            const delay = state.speedBoost ? state.moveDelay * 0.5 : state.moveDelay;
+            if (now - state.lastMoveTime < delay) return;
+            
+            const nx = state.player.targetX + dx;
+            const ny = state.player.targetY + dy;
+            
+            if (nx >= 0 && nx < state.mazeWidth && ny >= 0 && ny < state.mazeHeight && state.maze[ny][nx] === 0) {
+                // Check hazard
+                if (state.hazards.some(h => h.x === nx && h.y === ny)) {
+                    const canvas = document.getElementById('game-canvas');
+                    canvas.classList.add('shake');
+                    setTimeout(() => canvas.classList.remove('shake'), 300);
+                    return;
+                }
+                
+                state.player.targetX = nx;
+                state.player.targetY = ny;
+                state.player.animProgress = 0;
+                state.lastMoveTime = now;
+                playMove();
+                
+                // Check collectibles
+                const collectIdx = state.collectibles.findIndex(c => c.x === nx && c.y === ny);
+                if (collectIdx !== -1) {
+                    state.collectibles.splice(collectIdx, 1);
+                    
+                    // Combo system
+                    if (now - state.lastCollectTime < 2000) {
+                        state.combo = Math.min(state.combo + 1, 5);
+                    } else {
+                        state.combo = 1;
+                    }
+                    state.lastCollectTime = now;
+                    state.comboTimer = 60;
+                    
+                    const points = 10 * state.combo;
+                    state.score += points;
+                    createParticles(nx, ny, '#FFD700', 12);
+                    playCollect();
+                    updateUI();
+                }
+                
+                // Check powerups
+                const powerIdx = state.powerups.findIndex(p => p.x === nx && p.y === ny);
+                if (powerIdx !== -1) {
+                    const power = state.powerups[powerIdx];
+                    state.powerups.splice(powerIdx, 1);
+                    
+                    if (power.type === 'speed') {
+                        state.speedBoost = true;
+                        state.speedBoostTimer = 300; // 5 seconds
+                        document.getElementById('speed-indicator').classList.remove('hidden');
+                    } else if (power.type === 'time') {
+                        state.timeLeft += 10;
+                    }
+                    
+                    createParticles(nx, ny, power.type === 'speed' ? '#FFD700' : '#00FFFF', 15);
+                    playPowerup();
+                    updateUI();
+                }
+                
+                // Check goal
+                if (nx === state.goal.x && ny === state.goal.y) {
+                    levelComplete();
+                }
+            }
+        }
+
+        function destroyHazard() {
+            if (state.gamePaused || state.gameOver || !state.gameStarted) return;
+            
+            const { targetX, targetY } = state.player;
+            const adjacent = [
+                { x: targetX, y: targetY },
+                { x: targetX + 1, y: targetY },
+                { x: targetX - 1, y: targetY },
+                { x: targetX, y: targetY + 1 },
+                { x: targetX, y: targetY - 1 }
+            ];
+            
+            for (const pos of adjacent) {
+                const idx = state.hazards.findIndex(h => h.x === pos.x && h.y === pos.y);
+                if (idx !== -1) {
+                    const hazard = state.hazards[idx];
+                    state.hazards.splice(idx, 1);
+                    state.score += 5;
+                    createParticles(hazard.x, hazard.y, '#FF4444', 15);
+                    playDestroy();
+                    updateUI();
+                    return;
+                }
+            }
+        }
+
+        // ===== GAME FLOW =====
+        function levelComplete() {
+            const timeBonus = state.timeLeft * 2;
+            state.score += timeBonus;
+            
+            document.getElementById('level-bonus').textContent = timeBonus;
+            document.getElementById('level-complete').classList.remove('hidden');
+            playWin();
+            
+            let countdown = 3;
+            const timerEl = document.getElementById('next-level-timer');
+            const interval = setInterval(() => {
+                countdown--;
+                timerEl.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    document.getElementById('level-complete').classList.remove('hidden');
+                    nextLevel();
+                }
+            }, 1000);
+        }
+
+        function nextLevel() {
+            state.level++;
+            state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
+            state.timeLeft = Math.max(30, 60 - state.level * 2); // Less time each level
+            state.speedBoost = false;
+            state.speedBoostTimer = 0;
+            document.getElementById('speed-indicator').classList.add('hidden');
+            
+            generateMaze();
+            document.getElementById('level-complete').classList.add('hidden');
+            updateUI();
+        }
+
+        function gameOverScreen(won) {
+            state.gameOver = true;
+            state.gameStarted = false;
+            
+            if (!won) playLose();
+            
+            const isNewHighScore = state.score > state.highScore;
+            if (isNewHighScore) {
+                state.highScore = state.score;
+                localStorage.setItem('mazeHighScore', state.score.toString());
+            }
+            
+            document.getElementById('game-over-title').textContent = won ? 'Victory!' : "Time's Up!";
+            document.getElementById('final-score').textContent = state.score;
+            document.getElementById('final-level').textContent = state.level;
+            document.getElementById('new-high-score').classList.toggle('hidden', !isNewHighScore);
+            document.getElementById('game-over').classList.remove('hidden');
+        }
+
+        function startGame() {
+            state.gameStarted = false;
+            state.gameOver = false;
+            state.gamePaused = false;
+            state.score = 0;
+            state.level = 1;
+            state.combo = 0;
+            state.timeLeft = state.difficulty === 'easy' ? 90 : state.difficulty === 'hard' ? 45 : 60;
+            state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
+            state.speedBoost = false;
+            state.particles = [];
+            
+            generateMaze();
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('speed-indicator').classList.add('hidden');
+            
+            updateUI();
+            
+            // Countdown
+            const countdownEl = document.getElementById('countdown');
+            countdownEl.classList.remove('hidden');
+            let count = 3;
+            countdownEl.querySelector('span').textContent = count;
+            
+            const countInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownEl.querySelector('span').textContent = count;
+                    playTone(440, 0.1, 'sine', 0.1);
+                } else {
+                    countdownEl.classList.add('hidden');
+                    playTone(880, 0.2, 'sine', 0.15);
+                    state.gameStarted = true;
+                    clearInterval(countInterval);
+                }
+            }, 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = `Score: ${state.score}`;
+            document.getElementById('timer').textContent = `${state.timeLeft}s`;
+            document.getElementById('timer').style.color = state.timeLeft <= 10 ? '#FF4444' : '#FFFFFF';
+            document.getElementById('level').textContent = `Level ${state.level}`;
+            
+            const comboEl = document.getElementById('combo');
+            if (state.combo > 1) {
+                comboEl.textContent = `x${state.combo} Combo!`;
+                comboEl.classList.remove('hidden');
+            } else {
+                comboEl.classList.add('hidden');
+            }
+        }
+
+        // ===== RENDERING =====
+        function draw() {
+            const { ctx, canvas, tileSize, maze, mazeWidth, mazeHeight, player, goal, hazards, collectibles, powerups, particles } = state;
+            
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw maze
+            for (let y = 0; y < mazeHeight; y++) {
+                for (let x = 0; x < mazeWidth; x++) {
+                    if (maze[y][x] === 1) {
+                        // Wall with gradient
+                        const gradient = ctx.createLinearGradient(x * tileSize, y * tileSize, (x + 1) * tileSize, (y + 1) * tileSize);
+                        gradient.addColorStop(0, '#2d3748');
+                        gradient.addColorStop(1, '#1a202c');
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                        
+                        // Wall border
+                        ctx.strokeStyle = '#4a5568';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    } else {
+                        // Floor
+                        ctx.fillStyle = '#16213e';
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+            
+            // Draw goal
+            const goalPulse = Math.sin(Date.now() / 300) * 0.2 + 0.8;
+            ctx.fillStyle = `rgba(72, 187, 120, ${goalPulse})`;
+            ctx.fillRect(goal.x * tileSize, goal.y * tileSize, tileSize, tileSize);
+            ctx.fillStyle = '#48BB78';
+            ctx.font = `${tileSize * 0.7}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🏁', goal.x * tileSize + tileSize / 2, goal.y * tileSize + tileSize / 2);
+            
+            // Draw hazards
+            hazards.forEach(h => {
+                h.pulse += 0.1;
+                const pulse = Math.sin(h.pulse) * 0.3 + 0.7;
+                ctx.fillStyle = `rgba(239, 68, 68, ${pulse})`;
+                ctx.fillRect(h.x * tileSize + 2, h.y * tileSize + 2, tileSize - 4, tileSize - 4);
+                ctx.font = `${tileSize * 0.6}px Arial`;
+                ctx.fillText('💀', h.x * tileSize + tileSize / 2, h.y * tileSize + tileSize / 2);
+            });
+            
+            // Draw collectibles
+            collectibles.forEach(c => {
+                c.rotation += 0.05;
+                const bob = Math.sin(c.rotation) * 3;
+                ctx.font = `${tileSize * 0.7}px Arial`;
+                ctx.fillText('💎', c.x * tileSize + tileSize / 2, c.y * tileSize + tileSize / 2 + bob);
+            });
+            
+            // Draw powerups
+            powerups.forEach(p => {
+                p.pulse += 0.08;
+                const scale = 1 + Math.sin(p.pulse) * 0.1;
+                ctx.font = `${tileSize * 0.6 * scale}px Arial`;
+                const icon = p.type === 'speed' ? '⚡' : '⏰';
+                ctx.fillText(icon, p.x * tileSize + tileSize / 2, p.y * tileSize + tileSize / 2);
+            });
+            
+            // Draw particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            
+            // Animate player
+            if (player.animProgress < 1) {
+                player.animProgress += 0.15;
+                if (player.animProgress > 1) player.animProgress = 1;
+                
+                const ease = 1 - Math.pow(1 - player.animProgress, 3); // ease out
+                player.x = player.x + (player.targetX - player.x) * ease;
+                player.y = player.y + (player.targetY - player.y) * ease;
+            } else {
+                player.x = player.targetX;
+                player.y = player.targetY;
+            }
+            
+            // Draw player
+            ctx.font = `${tileSize * 0.85}px Arial`;
+            ctx.fillText(state.character, player.x * tileSize + tileSize / 2, player.y * tileSize + tileSize / 2 + 2);
+            
+            // Speed boost effect
+            if (state.speedBoost) {
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(player.x * tileSize + tileSize / 2, player.y * tileSize + tileSize / 2, tileSize / 2 + 3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        // ===== GAME LOOP =====
+        let lastTime = 0;
+        let timerAccum = 0;
+        
+        function gameLoop(timestamp) {
+            const delta = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            if (state.gameStarted && !state.gamePaused && !state.gameOver) {
+                // Timer
+                timerAccum += delta;
+                if (timerAccum >= 1000) {
+                    timerAccum -= 1000;
+                    state.timeLeft--;
+                    updateUI();
+                    
+                    if (state.timeLeft <= 0) {
+                        gameOverScreen(false);
+                    }
+                }
+                
+                // Combo timer
+                if (state.comboTimer > 0) {
+                    state.comboTimer--;
+                    if (state.comboTimer <= 0) {
+                        state.combo = 0;
+                        updateUI();
+                    }
+                }
+                
+                // Speed boost timer
+                if (state.speedBoost) {
+                    state.speedBoostTimer--;
+                    if (state.speedBoostTimer <= 0) {
+                        state.speedBoost = false;
+                        document.getElementById('speed-indicator').classList.add('hidden');
+                    }
+                }
+                
+                // Handle held keys
+                const now = Date.now();
+                const delay = state.speedBoost ? state.moveDelay * 0.5 : state.moveDelay;
+                if (now - state.lastMoveTime >= delay) {
+                    if (state.keysPressed['ArrowUp'] || state.keysPressed['KeyW']) movePlayer(0, -1);
+                    else if (state.keysPressed['ArrowDown'] || state.keysPressed['KeyS']) movePlayer(0, 1);
+                    else if (state.keysPressed['ArrowLeft'] || state.keysPressed['KeyA']) movePlayer(-1, 0);
+                    else if (state.keysPressed['ArrowRight'] || state.keysPressed['KeyD']) movePlayer(1, 0);
+                }
+                
+                updateParticles();
+                draw();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ===== INPUT =====
+        function setupInput() {
+            document.addEventListener('keydown', (e) => {
+                if (!state.audioCtx) initAudio();
+                
+                state.keysPressed[e.code] = true;
+                
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    destroyHazard();
+                }
+                
+                if (e.code === 'KeyP' || e.code === 'Escape') {
+                    e.preventDefault();
+                    if (state.gameStarted && !state.gameOver) {
+                        state.gamePaused = !state.gamePaused;
+                        document.getElementById('pause-overlay').classList.toggle('hidden', !state.gamePaused);
+                    }
+                }
+                
+                // Prevent scrolling
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                state.keysPressed[e.code] = false;
+            });
+            
+            // Mobile controls
+            document.querySelectorAll('.mobile-btn').forEach(btn => {
+                const handler = () => {
+                    if (!state.audioCtx) initAudio();
+                    const dir = btn.dataset.dir;
+                    if (dir === 'up') movePlayer(0, -1);
+                    else if (dir === 'down') movePlayer(0, 1);
+                    else if (dir === 'left') movePlayer(-1, 0);
+                    else if (dir === 'right') movePlayer(1, 0);
+                    else if (dir === 'action') destroyHazard();
+                };
+                btn.addEventListener('click', handler);
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); handler(); });
+            });
+            
+            // Check for mobile
+            if ('ontouchstart' in window) {
+                document.getElementById('mobile-controls').classList.remove('hidden');
+            }
+        }
+
+        // ===== SETUP =====
+        function setup() {
+            state.canvas = document.getElementById('game-canvas');
+            state.ctx = state.canvas.getContext('2d');
+            state.canvas.width = state.mazeWidth * state.tileSize;
+            state.canvas.height = state.mazeHeight * state.tileSize;
+            
+            document.getElementById('high-score').textContent = state.highScore;
+            
+            // Character selection
+            document.querySelectorAll('#characters button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (!state.audioCtx) initAudio();
+                    state.character = btn.dataset.char;
+                    document.querySelectorAll('#characters button').forEach(b => 
+                        b.classList.remove('border-blue-500', 'bg-blue-900/30'));
+                    btn.classList.add('border-blue-500', 'bg-blue-900/30');
+                });
+            });
+            
+            // Difficulty buttons
+            document.getElementById('easy-btn').addEventListener('click', () => {
+                state.difficulty = 'easy';
+                startGame();
+            });
+            document.getElementById('medium-btn').addEventListener('click', () => {
+                state.difficulty = 'medium';
+                startGame();
+            });
+            document.getElementById('hard-btn').addEventListener('click', () => {
+                state.difficulty = 'hard';
+                startGame();
+            });
+            
+            // Game over buttons
+            document.getElementById('play-again-btn').addEventListener('click', startGame);
+            document.getElementById('menu-btn').addEventListener('click', () => {
+                document.getElementById('game-over').classList.add('hidden');
+                document.getElementById('game-screen').classList.add('hidden');
+                document.getElementById('menu-screen').classList.remove('hidden');
+                document.getElementById('high-score').textContent = state.highScore;
+            });
+            
+            // Pause buttons
+            document.getElementById('resume-btn').addEventListener('click', () => {
+                state.gamePaused = false;
+                document.getElementById('pause-overlay').classList.add('hidden');
+            });
+            document.getElementById('quit-btn').addEventListener('click', () => {
+                state.gamePaused = false;
+                state.gameStarted = false;
+                document.getElementById('pause-overlay').classList.add('hidden');
+                document.getElementById('game-screen').classList.add('hidden');
+                document.getElementById('menu-screen').classList.remove('hidden');
+            });
+            
+            setupInput();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setup);
+        } else {
+            setup();
+        }
+    </script>
+</body>
+</html>
