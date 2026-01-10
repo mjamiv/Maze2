@@ -128,13 +128,9 @@
                     <span class="text-sm">Ghost</span>
                 </button>
             </div>
-            
-            <div class="flex gap-4 mb-4">
-                <button id="easy-btn" class="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg transition">Easy</button>
-                <button id="medium-btn" class="px-6 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg transition">Medium</button>
-                <button id="hard-btn" class="px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg transition">Hard</button>
-            </div>
-            
+
+            <button id="play-btn" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-xl transition mb-4">Play Game</button>
+
             <p class="text-gray-500 text-sm">High Score: <span id="high-score">0</span></p>
 
             <div class="flex gap-4 mt-4">
@@ -249,7 +245,6 @@
             particles: [],
             
             character: '🧙',
-            difficulty: 'medium',
             gameStarted: false,
             gamePaused: false,
             gameOver: false,
@@ -442,7 +437,7 @@
 
         // ===== MAZE GENERATION =====
         function generateMaze() {
-            const { mazeWidth, mazeHeight, level, difficulty } = state;
+            const { mazeWidth, mazeHeight, level } = state;
             
             // Initialize with walls
             state.maze = Array(mazeHeight).fill().map(() => Array(mazeWidth).fill(1));
@@ -474,7 +469,7 @@
             state.maze[state.goal.y][state.goal.x] = 0;
             
             // Add some extra paths for easier navigation
-            const extraPaths = difficulty === 'easy' ? 8 : difficulty === 'medium' ? 5 : 2;
+            const extraPaths = 5; // Standard difficulty
             for (let i = 0; i < extraPaths; i++) {
                 const x = Math.floor(Math.random() * (mazeWidth - 4)) + 2;
                 const y = Math.floor(Math.random() * (mazeHeight - 4)) + 2;
@@ -484,7 +479,7 @@
             }
             
             // Generate hazards
-            const hazardCount = Math.min(3 + level, difficulty === 'easy' ? 4 : difficulty === 'hard' ? 10 : 7);
+            const hazardCount = Math.min(3 + level, 7); // Standard difficulty
             state.hazards = [];
             for (let i = 0; i < hazardCount; i++) {
                 let attempts = 0;
@@ -766,7 +761,7 @@
             state.score = 0;
             state.level = 1;
             state.combo = 0;
-            state.timeLeft = state.difficulty === 'easy' ? 90 : state.difficulty === 'hard' ? 45 : 60;
+            state.timeLeft = 60;
             state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
             state.speedBoost = false;
             state.particles = [];
@@ -1165,19 +1160,8 @@
                 });
             });
             
-            // Difficulty buttons
-            document.getElementById('easy-btn').addEventListener('click', () => {
-                state.difficulty = 'easy';
-                startGame();
-            });
-            document.getElementById('medium-btn').addEventListener('click', () => {
-                state.difficulty = 'medium';
-                startGame();
-            });
-            document.getElementById('hard-btn').addEventListener('click', () => {
-                state.difficulty = 'hard';
-                startGame();
-            });
+            // Play button
+            document.getElementById('play-btn').addEventListener('click', startGame);
             
             // Game over buttons
             document.getElementById('play-again-btn').addEventListener('click', startGame);
