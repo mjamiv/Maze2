@@ -2,6 +2,9 @@
 
 A fun maze game to play during vibe coding wait times.
 
+## Access
+https://mjamiv.github.io/Maze2/
+
 ## How to Play
 
 Navigate through procedurally generated mazes, collect gems, avoid hazards, and reach the goal before time runs out!
