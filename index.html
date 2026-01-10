@@ -2,15 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Maze Runner Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         * { box-sizing: border-box; }
-        body { 
-            margin: 0; 
+        html, body {
+            margin: 0;
             overflow: hidden;
             font-family: 'Segoe UI', system-ui, sans-serif;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            height: 100%;
         }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
@@ -20,6 +27,28 @@
         .character-btn:hover { transform: scale(1.1) translateY(-5px); }
         .character-btn { transition: all 0.2s ease; }
         #game-canvas { image-rendering: pixelated; }
+
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            #menu-screen { padding: 1rem; margin: 0.5rem; }
+            #menu-screen h1 { font-size: 1.75rem; }
+            #menu-screen .character-btn { padding: 0.5rem; }
+            #menu-screen .character-btn span:first-child { font-size: 2rem; }
+            #characters { gap: 0.5rem; }
+            .desktop-only { display: none !important; }
+        }
+        @media (min-width: 641px) {
+            .mobile-only { display: none !important; }
+        }
+
+        /* Mobile control buttons */
+        .mobile-btn {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mobile-btn:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
@@ -32,16 +61,23 @@
             <h1 class="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">Maze Runner Pro</h1>
             <p class="text-gray-400 mb-8">Navigate the maze, collect gems, avoid hazards!</p>
             
-            <div class="bg-gray-800/50 p-6 rounded-xl mb-6 max-w-md">
-                <h3 class="text-lg font-semibold mb-3 text-blue-400">How to Play</h3>
-                <div class="grid grid-cols-2 gap-3 text-sm text-gray-300">
+            <div class="bg-gray-800/50 p-4 sm:p-6 rounded-xl mb-4 sm:mb-6 max-w-md">
+                <h3 class="text-base sm:text-lg font-semibold mb-3 text-blue-400">How to Play</h3>
+                <!-- Desktop controls -->
+                <div class="desktop-only grid grid-cols-2 gap-3 text-sm text-gray-300">
                     <div class="flex items-center gap-2"><span class="bg-gray-700 px-2 py-1 rounded">↑↓←→</span> Move</div>
                     <div class="flex items-center gap-2"><span class="bg-gray-700 px-2 py-1 rounded">WASD</span> Move</div>
                     <div class="flex items-center gap-2"><span class="bg-gray-700 px-2 py-1 rounded">Space</span> Destroy hazard</div>
                     <div class="flex items-center gap-2"><span class="bg-gray-700 px-2 py-1 rounded">P/Esc</span> Pause</div>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-700 text-sm text-gray-400">
-                    <p>🟢 Goal | 💎 Gems (+10) | ⚡ Speed | ⏰ Time | 🔴 Hazards</p>
+                <!-- Mobile controls -->
+                <div class="mobile-only text-sm text-gray-300 space-y-2">
+                    <p>Use the on-screen D-pad to move</p>
+                    <p>Tap 💥 to destroy adjacent hazards</p>
+                    <p>Tap ⏸️ to pause the game</p>
+                </div>
+                <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-700 text-xs sm:text-sm text-gray-400">
+                    <p>🏁 Goal | 💎 Gems (+10) | ⚡ Speed | ⏰ Time | 💀 Hazards</p>
                 </div>
             </div>
             
@@ -115,16 +151,21 @@
             </div>
             
             <!-- Mobile Controls -->
-            <div id="mobile-controls" class="hidden mt-4 grid grid-cols-3 gap-2 w-48">
-                <div></div>
-                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="up">↑</button>
-                <div></div>
-                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="left">←</button>
-                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="action">💥</button>
-                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="right">→</button>
-                <div></div>
-                <button class="mobile-btn p-4 bg-gray-700 rounded-lg active:bg-gray-600 text-2xl" data-dir="down">↓</button>
-                <div></div>
+            <div id="mobile-controls" class="hidden mt-2 flex items-center justify-center gap-4 w-full px-4">
+                <!-- Left side: D-pad -->
+                <div class="grid grid-cols-3 gap-1">
+                    <div></div>
+                    <button class="mobile-btn w-14 h-14 bg-gray-700 rounded-xl active:bg-blue-600 text-2xl flex items-center justify-center" data-dir="up">↑</button>
+                    <div></div>
+                    <button class="mobile-btn w-14 h-14 bg-gray-700 rounded-xl active:bg-blue-600 text-2xl flex items-center justify-center" data-dir="left">←</button>
+                    <button class="mobile-btn w-14 h-14 bg-red-700 rounded-xl active:bg-red-500 text-xl flex items-center justify-center" data-dir="action">💥</button>
+                    <button class="mobile-btn w-14 h-14 bg-gray-700 rounded-xl active:bg-blue-600 text-2xl flex items-center justify-center" data-dir="right">→</button>
+                    <div></div>
+                    <button class="mobile-btn w-14 h-14 bg-gray-700 rounded-xl active:bg-blue-600 text-2xl flex items-center justify-center" data-dir="down">↓</button>
+                    <div></div>
+                </div>
+                <!-- Right side: Pause button -->
+                <button id="mobile-pause-btn" class="mobile-btn w-14 h-14 bg-gray-700 rounded-xl active:bg-gray-500 text-2xl flex items-center justify-center">⏸️</button>
             </div>
         </div>
 
@@ -190,7 +231,10 @@
 
             bgMusic: null,
             musicEnabled: true,
-            musicStarted: false
+            musicStarted: false,
+
+            isMobile: false,
+            touchHoldInterval: null
         };
 
         // ===== AUDIO =====
@@ -849,33 +893,100 @@
                 state.keysPressed[e.code] = false;
             });
             
-            // Mobile controls
+            // Mobile controls with touch hold support
             document.querySelectorAll('.mobile-btn').forEach(btn => {
-                const handler = () => {
+                const dir = btn.dataset.dir;
+                if (!dir) return;
+
+                const doMove = () => {
                     if (!state.audioCtx) initAudio();
-                    const dir = btn.dataset.dir;
                     if (dir === 'up') movePlayer(0, -1);
                     else if (dir === 'down') movePlayer(0, 1);
                     else if (dir === 'left') movePlayer(-1, 0);
                     else if (dir === 'right') movePlayer(1, 0);
                     else if (dir === 'action') destroyHazard();
                 };
-                btn.addEventListener('click', handler);
-                btn.addEventListener('touchstart', (e) => { e.preventDefault(); handler(); });
+
+                const startHold = (e) => {
+                    e.preventDefault();
+                    if (!state.audioCtx) initAudio();
+                    doMove();
+                    // For directional buttons, enable hold-to-move
+                    if (['up', 'down', 'left', 'right'].includes(dir)) {
+                        if (state.touchHoldInterval) clearInterval(state.touchHoldInterval);
+                        state.touchHoldInterval = setInterval(doMove, 100);
+                    }
+                };
+
+                const endHold = (e) => {
+                    e.preventDefault();
+                    if (state.touchHoldInterval) {
+                        clearInterval(state.touchHoldInterval);
+                        state.touchHoldInterval = null;
+                    }
+                };
+
+                btn.addEventListener('touchstart', startHold, { passive: false });
+                btn.addEventListener('touchend', endHold, { passive: false });
+                btn.addEventListener('touchcancel', endHold, { passive: false });
+                btn.addEventListener('click', (e) => { e.preventDefault(); doMove(); });
             });
-            
+
+            // Mobile pause button
+            const mobilePauseBtn = document.getElementById('mobile-pause-btn');
+            if (mobilePauseBtn) {
+                mobilePauseBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (state.gameStarted && !state.gameOver) {
+                        state.gamePaused = !state.gamePaused;
+                        document.getElementById('pause-overlay').classList.toggle('hidden', !state.gamePaused);
+                        if (state.gamePaused) {
+                            pauseBackgroundMusic();
+                            if (state.touchHoldInterval) {
+                                clearInterval(state.touchHoldInterval);
+                                state.touchHoldInterval = null;
+                            }
+                        } else {
+                            resumeBackgroundMusic();
+                        }
+                    }
+                });
+            }
+
             // Check for mobile
-            if ('ontouchstart' in window) {
+            if (state.isMobile) {
                 document.getElementById('mobile-controls').classList.remove('hidden');
             }
         }
 
         // ===== SETUP =====
+        function calculateTileSize() {
+            const maxWidth = window.innerWidth - 32;
+            const maxHeight = window.innerHeight - (state.isMobile ? 280 : 150);
+            const maxTileW = Math.floor(maxWidth / state.mazeWidth);
+            const maxTileH = Math.floor(maxHeight / state.mazeHeight);
+            return Math.min(Math.max(Math.min(maxTileW, maxTileH), 20), 32);
+        }
+
+        function resizeCanvas() {
+            state.tileSize = calculateTileSize();
+            state.canvas.width = state.mazeWidth * state.tileSize;
+            state.canvas.height = state.mazeHeight * state.tileSize;
+            if (state.gameStarted && !state.gamePaused && !state.gameOver) {
+                draw();
+            }
+        }
+
         function setup() {
             state.canvas = document.getElementById('game-canvas');
             state.ctx = state.canvas.getContext('2d');
+            state.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            state.tileSize = calculateTileSize();
             state.canvas.width = state.mazeWidth * state.tileSize;
             state.canvas.height = state.mazeHeight * state.tileSize;
+
+            // Handle resize
+            window.addEventListener('resize', resizeCanvas);
 
             document.getElementById('high-score').textContent = state.highScore;
 
