@@ -23,6 +23,9 @@
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+    <!-- Background Music -->
+    <audio id="bg-music" src="playdate.mp3" loop preload="auto"></audio>
+
     <div id="app" class="relative">
         <!-- Main Menu -->
         <div id="menu-screen" class="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-700">
@@ -69,6 +72,11 @@
             </div>
             
             <p class="text-gray-500 text-sm">High Score: <span id="high-score">0</span></p>
+
+            <button id="music-toggle" class="mt-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition flex items-center gap-2">
+                <span id="music-icon">🔊</span>
+                <span id="music-text">Music On</span>
+            </button>
         </div>
 
         <!-- Game Screen -->
@@ -178,7 +186,11 @@
             
             highScore: parseInt(localStorage.getItem('mazeHighScore') || '0'),
             soundEnabled: true,
-            audioCtx: null
+            audioCtx: null,
+
+            bgMusic: null,
+            musicEnabled: true,
+            musicStarted: false
         };
 
         // ===== AUDIO =====
@@ -218,6 +230,54 @@
         }
         function playLose() {
             [400, 350, 300, 250].forEach((f, i) => setTimeout(() => playTone(f, 0.2, 'sawtooth', 0.08), i * 150));
+        }
+
+        // ===== BACKGROUND MUSIC =====
+        function initBackgroundMusic() {
+            state.bgMusic = document.getElementById('bg-music');
+            state.bgMusic.volume = 0.4;
+        }
+
+        function startBackgroundMusic() {
+            if (!state.bgMusic || !state.musicEnabled || state.musicStarted) return;
+            state.bgMusic.play().then(() => {
+                state.musicStarted = true;
+            }).catch(e => {
+                // Autoplay blocked, will try again on next interaction
+                console.log('Music autoplay blocked, waiting for interaction');
+            });
+        }
+
+        function toggleBackgroundMusic() {
+            state.musicEnabled = !state.musicEnabled;
+            const icon = document.getElementById('music-icon');
+            const text = document.getElementById('music-text');
+
+            if (state.musicEnabled) {
+                icon.textContent = '🔊';
+                text.textContent = 'Music On';
+                if (state.musicStarted) {
+                    state.bgMusic.play();
+                } else {
+                    startBackgroundMusic();
+                }
+            } else {
+                icon.textContent = '🔇';
+                text.textContent = 'Music Off';
+                state.bgMusic.pause();
+            }
+        }
+
+        function pauseBackgroundMusic() {
+            if (state.bgMusic && state.musicEnabled) {
+                state.bgMusic.pause();
+            }
+        }
+
+        function resumeBackgroundMusic() {
+            if (state.bgMusic && state.musicEnabled && state.musicStarted) {
+                state.bgMusic.play();
+            }
         }
 
         // ===== MAZE GENERATION =====
@@ -545,7 +605,10 @@
             state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
             state.speedBoost = false;
             state.particles = [];
-            
+
+            // Start background music on first game start
+            startBackgroundMusic();
+
             generateMaze();
             
             document.getElementById('menu-screen').classList.add('hidden');
@@ -768,6 +831,11 @@
                     if (state.gameStarted && !state.gameOver) {
                         state.gamePaused = !state.gamePaused;
                         document.getElementById('pause-overlay').classList.toggle('hidden', !state.gamePaused);
+                        if (state.gamePaused) {
+                            pauseBackgroundMusic();
+                        } else {
+                            resumeBackgroundMusic();
+                        }
                     }
                 }
                 
@@ -808,8 +876,17 @@
             state.ctx = state.canvas.getContext('2d');
             state.canvas.width = state.mazeWidth * state.tileSize;
             state.canvas.height = state.mazeHeight * state.tileSize;
-            
+
             document.getElementById('high-score').textContent = state.highScore;
+
+            // Initialize background music
+            initBackgroundMusic();
+
+            // Music toggle button
+            document.getElementById('music-toggle').addEventListener('click', () => {
+                if (!state.musicStarted) startBackgroundMusic();
+                toggleBackgroundMusic();
+            });
             
             // Character selection
             document.querySelectorAll('#characters button').forEach(btn => {
@@ -849,6 +926,7 @@
             document.getElementById('resume-btn').addEventListener('click', () => {
                 state.gamePaused = false;
                 document.getElementById('pause-overlay').classList.add('hidden');
+                resumeBackgroundMusic();
             });
             document.getElementById('quit-btn').addEventListener('click', () => {
                 state.gamePaused = false;
@@ -856,6 +934,8 @@
                 document.getElementById('pause-overlay').classList.add('hidden');
                 document.getElementById('game-screen').classList.add('hidden');
                 document.getElementById('menu-screen').classList.remove('hidden');
+                // Music keeps playing in menu
+                resumeBackgroundMusic();
             });
             
             setupInput();
