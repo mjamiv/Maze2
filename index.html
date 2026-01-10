@@ -180,8 +180,10 @@
             </div>
             
             <!-- Mobile Controls -->
-            <div id="mobile-controls" class="hidden mt-2 flex items-center justify-center gap-4 w-full px-4">
-                <!-- Left side: D-pad -->
+            <div id="mobile-controls" class="hidden mt-2 flex flex-col items-center gap-2 w-full px-4">
+                <!-- Pause button - moved above D-pad -->
+                <button id="mobile-pause-btn" class="mobile-btn px-6 py-2 bg-gray-700 rounded-xl active:bg-gray-500 text-lg flex items-center justify-center gap-2">⏸️ Pause</button>
+                <!-- D-pad -->
                 <div class="grid grid-cols-3 gap-1">
                     <div></div>
                     <button class="mobile-btn w-14 h-14 bg-gray-700 rounded-xl active:bg-blue-600 text-2xl flex items-center justify-center" data-dir="up">↑</button>
@@ -193,8 +195,6 @@
                     <button class="mobile-btn w-14 h-14 bg-gray-700 rounded-xl active:bg-blue-600 text-2xl flex items-center justify-center" data-dir="down">↓</button>
                     <div></div>
                 </div>
-                <!-- Right side: Pause button -->
-                <button id="mobile-pause-btn" class="mobile-btn w-14 h-14 bg-gray-700 rounded-xl active:bg-gray-500 text-2xl flex items-center justify-center">⏸️</button>
             </div>
         </div>
 
@@ -1179,6 +1179,10 @@
                 resumeBackgroundMusic();
             });
             document.getElementById('quit-btn').addEventListener('click', () => {
+                // Save score to leaderboard before quitting
+                if (state.score > 0) {
+                    addToLeaderboard(state.playerName, state.score, state.level);
+                }
                 state.gamePaused = false;
                 state.gameStarted = false;
                 document.getElementById('pause-overlay').classList.add('hidden');
