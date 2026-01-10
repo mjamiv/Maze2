@@ -49,6 +49,25 @@
         .mobile-btn:active {
             transform: scale(0.95);
         }
+
+        /* Allow text input selection */
+        input[type="text"] {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        /* Leaderboard scrollbar */
+        #leaderboard-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        #leaderboard-list::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 3px;
+        }
+        #leaderboard-list::-webkit-scrollbar-thumb {
+            background: #6b7280;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
@@ -56,10 +75,19 @@
     <audio id="bg-music" src="playdate.mp3" loop preload="auto"></audio>
 
     <div id="app" class="relative">
+        <!-- Name Entry Screen -->
+        <div id="name-screen" class="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-700">
+            <h1 class="text-4xl sm:text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">Maze Runner Pro</h1>
+            <p class="text-gray-400 mb-8">Enter your name to begin</p>
+            <input type="text" id="player-name-input" maxlength="15" placeholder="Your Name"
+                class="px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-center text-xl mb-4 w-64 focus:outline-none focus:border-blue-500">
+            <button id="start-btn" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-xl transition">Start Game</button>
+        </div>
+
         <!-- Main Menu -->
-        <div id="menu-screen" class="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-700">
+        <div id="menu-screen" class="hidden flex flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-700">
             <h1 class="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">Maze Runner Pro</h1>
-            <p class="text-gray-400 mb-8">Navigate the maze, collect gems, avoid hazards!</p>
+            <p class="text-gray-400 mb-6">Welcome, <span id="player-name-display" class="text-blue-400">Player</span>!</p>
             
             <div class="bg-gray-800/50 p-4 sm:p-6 rounded-xl mb-4 sm:mb-6 max-w-md">
                 <h3 class="text-base sm:text-lg font-semibold mb-3 text-blue-400">How to Play</h3>
@@ -109,10 +137,15 @@
             
             <p class="text-gray-500 text-sm">High Score: <span id="high-score">0</span></p>
 
-            <button id="music-toggle" class="mt-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition flex items-center gap-2">
-                <span id="music-icon">🔊</span>
-                <span id="music-text">Music On</span>
-            </button>
+            <div class="flex gap-4 mt-4">
+                <button id="music-toggle" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition flex items-center gap-2">
+                    <span id="music-icon">🔊</span>
+                    <span id="music-text">Music On</span>
+                </button>
+                <button id="leaderboard-btn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition flex items-center gap-2">
+                    🏆 Leaderboard
+                </button>
+            </div>
         </div>
 
         <!-- Game Screen -->
@@ -186,6 +219,16 @@
                 <button id="play-again-btn" class="px-8 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-xl transition">Play Again</button>
                 <button id="menu-btn" class="px-8 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition">Menu</button>
             </div>
+            <button id="gameover-leaderboard-btn" class="mt-4 px-6 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg transition">🏆 View Leaderboard</button>
+        </div>
+
+        <!-- Leaderboard Overlay -->
+        <div id="leaderboard-overlay" class="hidden absolute inset-0 bg-black/95 flex flex-col items-center justify-center rounded-2xl z-20 p-4">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-yellow-400">🏆 Leaderboard</h2>
+            <div id="leaderboard-list" class="w-full max-w-md max-h-80 overflow-y-auto mb-6">
+                <!-- Leaderboard entries will be inserted here -->
+            </div>
+            <button id="close-leaderboard-btn" class="px-8 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition">Close</button>
         </div>
     </div>
 
@@ -234,8 +277,81 @@
             musicStarted: false,
 
             isMobile: false,
-            touchHoldInterval: null
+            touchHoldInterval: null,
+
+            playerName: '',
+            leaderboard: []
         };
+
+        // ===== LEADERBOARD =====
+        function loadLeaderboard() {
+            try {
+                const data = localStorage.getItem('mazeLeaderboard');
+                state.leaderboard = data ? JSON.parse(data) : [];
+            } catch (e) {
+                state.leaderboard = [];
+            }
+        }
+
+        function saveLeaderboard() {
+            try {
+                localStorage.setItem('mazeLeaderboard', JSON.stringify(state.leaderboard));
+            } catch (e) {
+                console.log('Could not save leaderboard');
+            }
+        }
+
+        function addToLeaderboard(name, score, level) {
+            const entry = {
+                name: name || 'Anonymous',
+                score: score,
+                level: level,
+                date: new Date().toLocaleDateString()
+            };
+            state.leaderboard.push(entry);
+            // Sort by score descending, keep top 20
+            state.leaderboard.sort((a, b) => b.score - a.score);
+            state.leaderboard = state.leaderboard.slice(0, 20);
+            saveLeaderboard();
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            if (state.leaderboard.length === 0) {
+                list.innerHTML = '<p class="text-gray-400 text-center py-8">No scores yet. Be the first!</p>';
+                return;
+            }
+
+            let html = '<div class="space-y-2">';
+            state.leaderboard.forEach((entry, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                const isCurrentPlayer = entry.name === state.playerName;
+                const highlight = isCurrentPlayer ? 'bg-blue-900/50 border border-blue-500' : 'bg-gray-800/50';
+                html += `
+                    <div class="${highlight} rounded-lg px-4 py-2 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="text-lg w-8">${medal}</span>
+                            <span class="font-semibold ${isCurrentPlayer ? 'text-blue-400' : 'text-white'}">${entry.name}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-yellow-400 font-bold">${entry.score}</span>
+                            <span class="text-gray-500 text-sm ml-2">Lvl ${entry.level}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function showLeaderboard() {
+            renderLeaderboard();
+            document.getElementById('leaderboard-overlay').classList.remove('hidden');
+        }
+
+        function hideLeaderboard() {
+            document.getElementById('leaderboard-overlay').classList.add('hidden');
+        }
 
         // ===== AUDIO =====
         function initAudio() {
@@ -622,15 +738,20 @@
         function gameOverScreen(won) {
             state.gameOver = true;
             state.gameStarted = false;
-            
+
             if (!won) playLose();
-            
+
             const isNewHighScore = state.score > state.highScore;
             if (isNewHighScore) {
                 state.highScore = state.score;
                 localStorage.setItem('mazeHighScore', state.score.toString());
             }
-            
+
+            // Add score to leaderboard
+            if (state.score > 0) {
+                addToLeaderboard(state.playerName, state.score, state.level);
+            }
+
             document.getElementById('game-over-title').textContent = won ? 'Victory!' : "Time's Up!";
             document.getElementById('final-score').textContent = state.score;
             document.getElementById('final-level').textContent = state.level;
@@ -988,17 +1109,51 @@
             // Handle resize
             window.addEventListener('resize', resizeCanvas);
 
+            // Load leaderboard
+            loadLeaderboard();
+
             document.getElementById('high-score').textContent = state.highScore;
 
             // Initialize background music
             initBackgroundMusic();
+
+            // Name entry screen
+            const nameInput = document.getElementById('player-name-input');
+            const startBtn = document.getElementById('start-btn');
+
+            // Check if player name is saved
+            const savedName = localStorage.getItem('mazePlayerName');
+            if (savedName) {
+                nameInput.value = savedName;
+            }
+
+            startBtn.addEventListener('click', () => {
+                const name = nameInput.value.trim() || 'Player';
+                state.playerName = name;
+                localStorage.setItem('mazePlayerName', name);
+                document.getElementById('player-name-display').textContent = name;
+                document.getElementById('name-screen').classList.add('hidden');
+                document.getElementById('menu-screen').classList.remove('hidden');
+                if (!state.audioCtx) initAudio();
+            });
+
+            nameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    startBtn.click();
+                }
+            });
 
             // Music toggle button
             document.getElementById('music-toggle').addEventListener('click', () => {
                 if (!state.musicStarted) startBackgroundMusic();
                 toggleBackgroundMusic();
             });
-            
+
+            // Leaderboard buttons
+            document.getElementById('leaderboard-btn').addEventListener('click', showLeaderboard);
+            document.getElementById('gameover-leaderboard-btn').addEventListener('click', showLeaderboard);
+            document.getElementById('close-leaderboard-btn').addEventListener('click', hideLeaderboard);
+
             // Character selection
             document.querySelectorAll('#characters button').forEach(btn => {
                 btn.addEventListener('click', () => {
