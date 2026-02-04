@@ -290,25 +290,55 @@
 
         .dpad-btn {
             position: absolute;
-            width: 34px;
-            height: 34px;
             background: transparent;
             border: none;
             cursor: pointer;
             z-index: 3;
-            /* Ensure touch events work */
+            /* Ensure touch events work on mobile */
             touch-action: manipulation;
-            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            /* Minimum touch target size for accessibility */
+            min-width: 44px;
+            min-height: 44px;
         }
 
-        .dpad-btn:active {
-            background: rgba(0,0,0,0.2);
+        .dpad-btn:active,
+        .dpad-btn.pressed {
+            background: rgba(0,0,0,0.25);
         }
 
-        .dpad-up { top: 0; left: 50%; transform: translateX(-50%); }
-        .dpad-down { bottom: 0; left: 50%; transform: translateX(-50%); }
-        .dpad-left { left: 0; top: 50%; transform: translateY(-50%); }
-        .dpad-right { right: 0; top: 50%; transform: translateY(-50%); }
+        /* D-pad button positioning - larger touch areas that extend beyond the visual cross */
+        .dpad-up {
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 44px;
+            height: 40px;
+        }
+        .dpad-down {
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 44px;
+            height: 40px;
+        }
+        .dpad-left {
+            left: -5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 44px;
+        }
+        .dpad-right {
+            right: -5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 44px;
+        }
 
         /* Action buttons */
         .action-btn {
@@ -330,7 +360,8 @@
             touch-action: manipulation;
         }
 
-        .action-btn:active {
+        .action-btn:active,
+        .action-btn.pressed {
             box-shadow:
                 inset 0 2px 4px rgba(0,0,0,0.3),
                 0 2px 4px rgba(0,0,0,0.2);
@@ -359,10 +390,13 @@
             transform: rotate(-25deg);
             /* Ensure touch events work */
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .menu-btn:active {
+        .menu-btn:active,
+        .menu-btn.pressed {
             box-shadow: inset 0 3px 5px rgba(0,0,0,0.5);
+            background: #3a3a4a;
         }
 
         /* Speaker grille */
@@ -402,13 +436,19 @@
             transition: all 0.1s;
         }
 
-        .screen-content button:hover {
-            background: #0f380f;
-            color: #9bbc0f;
+        /* Only apply hover states on devices that support true hover (not touch) */
+        @media (hover: hover) and (pointer: fine) {
+            .screen-content button:hover {
+                background: #0f380f;
+                color: #9bbc0f;
+            }
         }
 
-        .screen-content button:active {
+        .screen-content button:active,
+        .screen-content button.pressed {
             transform: scale(0.95);
+            background: #0f380f;
+            color: #9bbc0f;
         }
 
         .screen-content input {
@@ -740,56 +780,14 @@
             }
         }
 
-        /* ===== SPECIFIC iPHONE MODEL OPTIMIZATIONS ===== */
+        /* ===== MOBILE VIEWPORT HEIGHT-BASED OPTIMIZATIONS ===== */
+        /* Using viewport height ranges instead of deprecated device-width queries */
 
-        /* iPhone SE (3rd gen) - 375x667 @2x */
-        @media (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) {
-            .controls-area {
-                min-height: 145px;
-                max-height: 155px;
-            }
-            .screen-content {
-                padding: 4px !important;
-            }
-        }
-
-        /* iPhone 12/13/14 mini - 375x812 @3x */
-        @media (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 165px;
-                max-height: 180px;
-            }
-        }
-
-        /* iPhone 12/13/14/15 - 390x844 @3x */
-        @media (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 170px;
-                max-height: 190px;
-            }
-            .dpad-container {
-                width: 115px;
-                height: 115px;
-            }
-            .action-btn {
-                width: 54px;
-                height: 54px;
-            }
-        }
-
-        /* iPhone 14/15 Pro - 393x852 @3x */
-        @media (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 175px;
-                max-height: 195px;
-            }
-        }
-
-        /* iPhone 12/13/14 Plus & Pro Max - 428x926 @3x */
-        @media (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) {
+        /* Very tall mobile screens (iPhone Pro Max, Plus models) - more space for controls */
+        @media (max-width: 640px) and (min-height: 850px) {
             .controls-area {
                 min-height: 190px;
-                max-height: 215px;
+                max-height: 230px;
             }
             .dpad-container {
                 width: 125px;
@@ -803,7 +801,7 @@
                 width: 125px;
                 height: 44px;
             }
-            .dpad-center, .dpad-btn {
+            .dpad-center {
                 width: 44px;
                 height: 44px;
             }
@@ -814,30 +812,11 @@
             }
         }
 
-        /* iPhone 14/15 Plus - 430x932 @3x */
-        @media (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 195px;
-                max-height: 220px;
-            }
-        }
-
-        /* iPhone 14/15 Pro Max - 430x932 @3x (same as Plus) */
-        /* Uses same rules as 430x932 above */
-
-        /* iPhone 16 Pro - 402x874 @3x */
-        @media (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 180px;
-                max-height: 200px;
-            }
-        }
-
-        /* iPhone 16 Pro Max - 440x956 @3x */
-        @media (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) {
+        /* Extra tall screens (newer Pro Max models) */
+        @media (max-width: 640px) and (min-height: 920px) {
             .controls-area {
                 min-height: 200px;
-                max-height: 230px;
+                max-height: 240px;
             }
             .dpad-container {
                 width: 130px;
@@ -851,7 +830,7 @@
                 width: 130px;
                 height: 46px;
             }
-            .dpad-center, .dpad-btn {
+            .dpad-center {
                 width: 46px;
                 height: 46px;
             }
@@ -1230,7 +1209,7 @@
             <!-- Action Buttons -->
             <div class="action-buttons flex items-center gap-1 sm:gap-2" style="transform: rotate(-25deg);">
                 <div class="flex flex-col items-center gap-1">
-                    <button id="btn-b" class="action-btn action-btn-b mobile-btn" data-dir="action" aria-label="B Button">B</button>
+                    <button id="btn-b" class="action-btn action-btn-b mobile-btn" aria-label="B Button">B</button>
                 </div>
                 <div class="flex flex-col items-center gap-1 -mt-4">
                     <button id="btn-a" class="action-btn action-btn-a mobile-btn" aria-label="A Button">A</button>
@@ -2235,8 +2214,43 @@
                 state.keysPressed[e.code] = false;
             });
 
-            // D-Pad and action buttons on the GameyBoy device
-            document.querySelectorAll('.mobile-btn').forEach(btn => {
+            // Track last touch time to prevent double-firing from touch + synthetic click
+            let lastTouchTime = 0;
+            const TOUCH_DEBOUNCE = 300; // ms
+
+            // Helper to create touch-aware handlers that prevent double-firing
+            function createTouchHandler(handler, options = {}) {
+                const { addPressedClass = false, element = null } = options;
+
+                return function(e) {
+                    const now = Date.now();
+                    const isTouch = e.type.startsWith('touch');
+
+                    // Prevent double-firing: if this is a click shortly after a touch, ignore it
+                    if (!isTouch && (now - lastTouchTime) < TOUCH_DEBOUNCE) {
+                        e.preventDefault();
+                        return;
+                    }
+
+                    if (isTouch) {
+                        lastTouchTime = now;
+                        e.preventDefault();
+                    }
+
+                    e.stopPropagation();
+
+                    // Add visual feedback
+                    if (addPressedClass && element) {
+                        element.classList.add('pressed');
+                        setTimeout(() => element.classList.remove('pressed'), 100);
+                    }
+
+                    handler(e);
+                };
+            }
+
+            // D-Pad buttons - directional controls with hold-to-move
+            document.querySelectorAll('.dpad-btn').forEach(btn => {
                 const dir = btn.dataset.dir;
                 if (!dir) return;
 
@@ -2247,24 +2261,44 @@
                     else if (dir === 'down') movePlayer(0, 1);
                     else if (dir === 'left') movePlayer(-1, 0);
                     else if (dir === 'right') movePlayer(1, 0);
-                    else if (dir === 'action') destroyHazard();
                 };
 
                 const startHold = (e) => {
-                    e.preventDefault();
+                    const now = Date.now();
+                    const isTouch = e.type.startsWith('touch');
+
+                    // Prevent double-firing
+                    if (!isTouch && (now - lastTouchTime) < TOUCH_DEBOUNCE) {
+                        return;
+                    }
+
+                    if (isTouch) {
+                        lastTouchTime = now;
+                        e.preventDefault();
+                    }
+
                     e.stopPropagation();
+
+                    // Visual feedback
+                    btn.classList.add('pressed');
+
                     if (!state.audioCtx) initAudio();
                     doMove();
-                    // For directional buttons, enable hold-to-move
-                    if (['up', 'down', 'left', 'right'].includes(dir)) {
-                        if (state.touchHoldInterval) clearInterval(state.touchHoldInterval);
-                        state.touchHoldInterval = setInterval(doMove, 100);
-                    }
+
+                    // Enable hold-to-move
+                    if (state.touchHoldInterval) clearInterval(state.touchHoldInterval);
+                    state.touchHoldInterval = setInterval(doMove, 100);
                 };
 
                 const endHold = (e) => {
-                    e.preventDefault();
+                    if (e.type.startsWith('touch')) {
+                        e.preventDefault();
+                    }
                     e.stopPropagation();
+
+                    // Remove visual feedback
+                    btn.classList.remove('pressed');
+
                     if (state.touchHoldInterval) {
                         clearInterval(state.touchHoldInterval);
                         state.touchHoldInterval = null;
@@ -2282,52 +2316,46 @@
             // B Button - destroy hazard
             const btnB = document.getElementById('btn-b');
             if (btnB) {
-                const handleB = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                const handleB = createTouchHandler(() => {
                     if (!state.audioCtx) initAudio();
                     hapticFeedback('medium');
                     destroyHazard();
-                };
-                btnB.addEventListener('click', handleB);
+                }, { addPressedClass: true, element: btnB });
+
                 btnB.addEventListener('touchstart', handleB, { passive: false });
+                btnB.addEventListener('click', handleB);
             }
 
-            // A Button - could be used for future features, for now same as B
+            // A Button - same as B for now
             const btnA = document.getElementById('btn-a');
             if (btnA) {
-                const handleA = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                const handleA = createTouchHandler(() => {
                     if (!state.audioCtx) initAudio();
                     hapticFeedback('medium');
-                    // A button can be confirm/action
                     destroyHazard();
-                };
-                btnA.addEventListener('click', handleA);
+                }, { addPressedClass: true, element: btnA });
+
                 btnA.addEventListener('touchstart', handleA, { passive: false });
+                btnA.addEventListener('click', handleA);
             }
 
             // SELECT button - pause
             const selectBtn = document.getElementById('select-btn');
             if (selectBtn) {
-                const handleSelect = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                const handleSelect = createTouchHandler(() => {
                     if (!state.audioCtx) initAudio();
                     hapticFeedback('medium');
                     togglePause();
-                };
-                selectBtn.addEventListener('click', handleSelect);
+                }, { addPressedClass: true, element: selectBtn });
+
                 selectBtn.addEventListener('touchstart', handleSelect, { passive: false });
+                selectBtn.addEventListener('click', handleSelect);
             }
 
             // START button - start game or unpause
             const startGameBtn = document.getElementById('start-game-btn');
             if (startGameBtn) {
-                const handleStart = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                const handleStart = createTouchHandler(() => {
                     if (!state.audioCtx) initAudio();
                     hapticFeedback('medium');
                     if (state.gamePaused) {
@@ -2335,9 +2363,10 @@
                     } else if (!state.gameStarted && !document.getElementById('menu-screen').classList.contains('hidden')) {
                         startGame();
                     }
-                };
-                startGameBtn.addEventListener('click', handleStart);
+                }, { addPressedClass: true, element: startGameBtn });
+
                 startGameBtn.addEventListener('touchstart', handleStart, { passive: false });
+                startGameBtn.addEventListener('click', handleStart);
             }
         }
 
@@ -2493,6 +2522,9 @@
                 nameInput.value = savedName;
             }
 
+            // Track touch time for name screen START button
+            let nameStartTouchTime = 0;
+
             const handleStart = () => {
                 const name = nameInput.value.trim() || 'Player';
                 state.playerName = name;
@@ -2504,20 +2536,31 @@
                 hapticFeedback('medium');
             };
 
-            // Touch handler for START button
-            let startTouchHandled = false;
-            startBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                startTouchHandled = true;
-                handleStart();
-            }, { passive: false });
-            startBtn.addEventListener('click', () => {
-                if (startTouchHandled) {
-                    startTouchHandled = false;
+            // Touch-aware handler for START button on name screen
+            const handleStartEvent = (e) => {
+                const now = Date.now();
+                const isTouch = e.type === 'touchstart';
+
+                // Prevent double-firing
+                if (!isTouch && (now - nameStartTouchTime) < 300) {
+                    e.preventDefault();
                     return;
                 }
+
+                if (isTouch) {
+                    nameStartTouchTime = now;
+                    e.preventDefault();
+                }
+
+                // Visual feedback
+                startBtn.classList.add('pressed');
+                setTimeout(() => startBtn.classList.remove('pressed'), 150);
+
                 handleStart();
-            });
+            };
+
+            startBtn.addEventListener('touchstart', handleStartEvent, { passive: false });
+            startBtn.addEventListener('click', handleStartEvent);
 
             nameInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -2525,23 +2568,39 @@
                 }
             });
 
+            // Shared touch timestamp for screen buttons (separate from game controls)
+            let screenButtonTouchTime = 0;
+            const SCREEN_BUTTON_DEBOUNCE = 300; // ms
+
             // Helper to add both click and touch handlers for screen buttons
             function addTapHandler(element, handler) {
                 if (!element) return;
-                let touchHandled = false;
-                element.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    touchHandled = true;
-                    hapticFeedback('light');
-                    handler();
-                }, { passive: false });
-                element.addEventListener('click', (e) => {
-                    if (touchHandled) {
-                        touchHandled = false;
+
+                const handleEvent = (e) => {
+                    const now = Date.now();
+                    const isTouch = e.type === 'touchstart';
+
+                    // Prevent double-firing: ignore click if it follows touch too quickly
+                    if (!isTouch && (now - screenButtonTouchTime) < SCREEN_BUTTON_DEBOUNCE) {
+                        e.preventDefault();
                         return;
                     }
+
+                    if (isTouch) {
+                        screenButtonTouchTime = now;
+                        e.preventDefault();
+                    }
+
+                    // Visual feedback
+                    element.classList.add('pressed');
+                    setTimeout(() => element.classList.remove('pressed'), 150);
+
+                    hapticFeedback('light');
                     handler();
-                });
+                };
+
+                element.addEventListener('touchstart', handleEvent, { passive: false });
+                element.addEventListener('click', handleEvent);
             }
 
             // Music toggle button
