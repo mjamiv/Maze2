@@ -2,12 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- PWA & Mobile App Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GameyBoy">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#6b6b7b">
+    <meta name="theme-color" content="#6b6b7b" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#5a5a6a" media="(prefers-color-scheme: dark)">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <!-- Prevent text size adjustment on orientation change -->
+    <meta name="HandheldFriendly" content="true">
     <title>Maze Runner - GameyBoy</title>
+    <!-- Preload critical font -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" as="style">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,14 +26,34 @@
             /* Dynamic viewport height - set by JS for iOS Safari compatibility */
             --vh: 1vh;
             --app-height: 100vh;
+            /* Safe area insets - set by JS */
+            --safe-area-top: 0px;
+            --safe-area-bottom: 0px;
+            --safe-area-left: 0px;
+            --safe-area-right: 0px;
         }
 
-        * { box-sizing: border-box; }
+        /* Critical: Prevent ALL zoom and scaling behaviors */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        html {
+            /* Prevent iOS text size adjust */
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            /* Smooth scrolling where allowed */
+            scroll-behavior: smooth;
+        }
+
         html, body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             font-family: 'Press Start 2P', monospace;
+            /* Allow touch but prevent zoom/scroll behaviors */
             touch-action: manipulation;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -36,6 +65,50 @@
             /* Prevent pull-to-refresh and overscroll */
             overscroll-behavior: none;
             -webkit-overflow-scrolling: touch;
+            /* GPU acceleration */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+
+        /* Loading overlay - shown until fonts are ready */
+        .app-loading {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(145deg, #8b8b9b 0%, #6b6b7b 50%, #5a5a6a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .app-loading.loaded {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: #2a2a3a;
+            animation: pulse-load 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse-load {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Ensure hidden class works (Tailwind fallback) */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Screen buttons (BACK, START, PLAY, etc.) */
+        .screen-content button {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+            cursor: pointer;
         }
 
         /* Pixel font base */
@@ -223,6 +296,9 @@
             border: none;
             cursor: pointer;
             z-index: 3;
+            /* Ensure touch events work */
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
         }
 
         .dpad-btn:active {
@@ -250,6 +326,8 @@
             font-size: 10px;
             color: #2a2a3a;
             text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+            /* Ensure touch events work */
+            touch-action: manipulation;
         }
 
         .action-btn:active {
@@ -279,6 +357,8 @@
                 0 1px 2px rgba(0,0,0,0.2);
             cursor: pointer;
             transform: rotate(-25deg);
+            /* Ensure touch events work */
+            touch-action: manipulation;
         }
 
         .menu-btn:active {
@@ -365,6 +445,23 @@
         #game-canvas {
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+            -webkit-image-rendering: pixelated;
+            /* GPU acceleration for smooth rendering */
+            will-change: contents;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            /* Prevent any touch interactions on canvas */
+            touch-action: none;
+            pointer-events: none;
+        }
+
+        /* Wrapper for canvas to handle touch */
+        .canvas-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
         }
 
         /* Mobile fullscreen - phone becomes the Game Boy */
@@ -491,6 +588,8 @@
                 padding: 8px 16px 12px 16px;
                 min-height: 160px;
                 max-height: 200px;
+                /* Ensure touch events work on controls */
+                touch-action: manipulation;
             }
 
             .desktop-only { display: none !important; }
@@ -641,6 +740,128 @@
             }
         }
 
+        /* ===== SPECIFIC iPHONE MODEL OPTIMIZATIONS ===== */
+
+        /* iPhone SE (3rd gen) - 375x667 @2x */
+        @media (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) {
+            .controls-area {
+                min-height: 145px;
+                max-height: 155px;
+            }
+            .screen-content {
+                padding: 4px !important;
+            }
+        }
+
+        /* iPhone 12/13/14 mini - 375x812 @3x */
+        @media (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) {
+            .controls-area {
+                min-height: 165px;
+                max-height: 180px;
+            }
+        }
+
+        /* iPhone 12/13/14/15 - 390x844 @3x */
+        @media (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) {
+            .controls-area {
+                min-height: 170px;
+                max-height: 190px;
+            }
+            .dpad-container {
+                width: 115px;
+                height: 115px;
+            }
+            .action-btn {
+                width: 54px;
+                height: 54px;
+            }
+        }
+
+        /* iPhone 14/15 Pro - 393x852 @3x */
+        @media (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) {
+            .controls-area {
+                min-height: 175px;
+                max-height: 195px;
+            }
+        }
+
+        /* iPhone 12/13/14 Plus & Pro Max - 428x926 @3x */
+        @media (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) {
+            .controls-area {
+                min-height: 190px;
+                max-height: 215px;
+            }
+            .dpad-container {
+                width: 125px;
+                height: 125px;
+            }
+            .dpad-vertical {
+                width: 44px;
+                height: 125px;
+            }
+            .dpad-horizontal {
+                width: 125px;
+                height: 44px;
+            }
+            .dpad-center, .dpad-btn {
+                width: 44px;
+                height: 44px;
+            }
+            .action-btn {
+                width: 58px;
+                height: 58px;
+                font-size: 15px;
+            }
+        }
+
+        /* iPhone 14/15 Plus - 430x932 @3x */
+        @media (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) {
+            .controls-area {
+                min-height: 195px;
+                max-height: 220px;
+            }
+        }
+
+        /* iPhone 14/15 Pro Max - 430x932 @3x (same as Plus) */
+        /* Uses same rules as 430x932 above */
+
+        /* iPhone 16 Pro - 402x874 @3x */
+        @media (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) {
+            .controls-area {
+                min-height: 180px;
+                max-height: 200px;
+            }
+        }
+
+        /* iPhone 16 Pro Max - 440x956 @3x */
+        @media (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) {
+            .controls-area {
+                min-height: 200px;
+                max-height: 230px;
+            }
+            .dpad-container {
+                width: 130px;
+                height: 130px;
+            }
+            .dpad-vertical {
+                width: 46px;
+                height: 130px;
+            }
+            .dpad-horizontal {
+                width: 130px;
+                height: 46px;
+            }
+            .dpad-center, .dpad-btn {
+                width: 46px;
+                height: 46px;
+            }
+            .action-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 16px;
+            }
+        }
+
         /* Landscape mobile */
         @media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
             html, body {
@@ -743,19 +964,53 @@
             .mobile-only { display: none !important; }
         }
 
-        /* Mobile control buttons */
+        /* Mobile control buttons - industry grade touch handling */
         .mobile-btn {
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
+            /* Prevent text selection on long press */
+            -webkit-user-select: none;
+            /* GPU acceleration for smooth animations */
+            will-change: transform;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            /* Smooth transition for press feedback */
+            transition: transform 0.05s ease-out, box-shadow 0.05s ease-out;
+            /* Ensure button is above other elements for touch */
+            position: relative;
+            z-index: 10;
         }
+
         .mobile-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.92) translateZ(0);
+        }
+
+        /* D-pad specific active states */
+        .dpad-btn:active {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Action button active states */
+        .action-btn:active {
+            transform: scale(0.92) translateY(2px) translateZ(0);
+            box-shadow:
+                inset 0 3px 6px rgba(0,0,0,0.4),
+                0 1px 2px rgba(0,0,0,0.2) !important;
+        }
+
+        /* Menu button active states */
+        .menu-btn:active {
+            transform: rotate(-25deg) scale(0.95) translateZ(0);
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.6) !important;
         }
 
         /* Allow text input selection */
         input[type="text"] {
             -webkit-user-select: text;
             user-select: text;
+            touch-action: manipulation;
         }
 
         /* Leaderboard scrollbar - retro style */
@@ -771,11 +1026,16 @@
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-2 sm:p-4">
+    <!-- Loading Overlay - hidden after fonts load -->
+    <div id="app-loading" class="app-loading">
+        <div class="loading-text">LOADING...</div>
+    </div>
+
     <!-- Background Music -->
     <audio id="bg-music" src="playdate.mp3" loop preload="auto"></audio>
 
     <!-- GameyBoy Device Frame -->
-    <div class="gameboy-device max-w-md w-full">
+    <div id="gameboy-container" class="gameboy-device max-w-md w-full" style="opacity: 0; transition: opacity 0.3s ease-in;">
         <!-- Brand and Power LED -->
         <div class="brand-area flex items-center justify-between mb-3 px-2">
             <div class="brand-text">Gamey<span>Boy</span></div>
@@ -983,13 +1243,20 @@
     </div>
 
     <script>
-        // ===== VIEWPORT HEIGHT FIX FOR iOS SAFARI =====
-        // iOS Safari has dynamic toolbars that change viewport height
-        // This calculates the actual visible height and sets CSS custom property
+        // ===== INDUSTRY-GRADE MOBILE SETUP =====
+
+        // Viewport height fix for iOS Safari (dynamic toolbars)
         function setAppHeight() {
             const vh = window.innerHeight * 0.01;
             document.documentElement.style.setProperty('--vh', `${vh}px`);
             document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+
+            // Also set safe area insets if available
+            const computedStyle = getComputedStyle(document.documentElement);
+            const safeTop = computedStyle.getPropertyValue('env(safe-area-inset-top)') || '0px';
+            const safeBottom = computedStyle.getPropertyValue('env(safe-area-inset-bottom)') || '0px';
+            document.documentElement.style.setProperty('--safe-area-top', safeTop);
+            document.documentElement.style.setProperty('--safe-area-bottom', safeBottom);
         }
 
         // Set initial height immediately
@@ -998,17 +1265,143 @@
         // Update on resize and orientation change
         window.addEventListener('resize', setAppHeight);
         window.addEventListener('orientationchange', () => {
-            // Delay to allow browser to finish rotation
+            // Multiple delays to catch all layout changes
             setTimeout(setAppHeight, 100);
             setTimeout(setAppHeight, 300);
+            setTimeout(setAppHeight, 500);
         });
 
-        // Also update when page visibility changes (fixes iOS Safari issues)
+        // Update when page visibility changes
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 setTimeout(setAppHeight, 100);
             }
         });
+
+        // ===== HAPTIC FEEDBACK =====
+        function hapticFeedback(type = 'light') {
+            if (!navigator.vibrate) return;
+
+            switch(type) {
+                case 'light':
+                    navigator.vibrate(10);
+                    break;
+                case 'medium':
+                    navigator.vibrate(20);
+                    break;
+                case 'heavy':
+                    navigator.vibrate(30);
+                    break;
+                case 'success':
+                    navigator.vibrate([10, 50, 20]);
+                    break;
+                case 'error':
+                    navigator.vibrate([30, 50, 30, 50, 30]);
+                    break;
+            }
+        }
+
+        // ===== SCREEN WAKE LOCK =====
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => {
+                        wakeLock = null;
+                    });
+                } catch (err) {
+                    // Wake lock request failed (e.g., low battery)
+                }
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (wakeLock) {
+                try {
+                    await wakeLock.release();
+                    wakeLock = null;
+                } catch (err) {
+                    // Release failed
+                }
+            }
+        }
+
+        // Re-request wake lock when page becomes visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && state && state.gameStarted && !state.gamePaused) {
+                requestWakeLock();
+            }
+        });
+
+        // ===== FONT LOADING & APP INITIALIZATION =====
+        function hideLoadingOverlay() {
+            const loadingEl = document.getElementById('app-loading');
+            const containerEl = document.getElementById('gameboy-container');
+
+            if (loadingEl) {
+                loadingEl.classList.add('loaded');
+                setTimeout(() => {
+                    loadingEl.style.display = 'none';
+                }, 300);
+            }
+
+            if (containerEl) {
+                containerEl.style.opacity = '1';
+            }
+        }
+
+        // Wait for fonts to load before showing app
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => {
+                setTimeout(hideLoadingOverlay, 100);
+            });
+        } else {
+            // Fallback for browsers without Font Loading API
+            setTimeout(hideLoadingOverlay, 500);
+        }
+
+        // ===== PREVENT UNWANTED TOUCH BEHAVIORS =====
+        // Only prevent multi-touch (pinch zoom)
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Prevent pull-to-refresh only on the screen area, not controls
+        document.addEventListener('touchmove', (e) => {
+            const target = e.target;
+            // Allow movement on buttons and scrollable areas
+            if (target.closest('.mobile-btn') ||
+                target.closest('.controls-area') ||
+                target.closest('#menu-screen') ||
+                target.closest('#leaderboard-list') ||
+                target.closest('input') ||
+                target.closest('button')) {
+                return; // Don't prevent default for these
+            }
+            // Prevent pull-to-refresh on other areas
+            e.preventDefault();
+        }, { passive: false });
+
+        // Prevent iOS gesture events (pinch zoom)
+        document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+        document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+        document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+
+        // Prevent context menu on long press (but allow button taps)
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.closest('.gameboy-device') && !e.target.closest('input')) {
+                e.preventDefault();
+            }
+        });
+
+        // ===== RETINA DISPLAY SUPPORT =====
+        function getDevicePixelRatio() {
+            return Math.min(window.devicePixelRatio || 1, 3); // Cap at 3x for performance
+        }
 
         // ===== GAME STATE =====
         const state = {
@@ -1525,12 +1918,21 @@
             state.gameOver = true;
             state.gameStarted = false;
 
-            if (!won) playLose();
+            // Release wake lock when game ends
+            releaseWakeLock();
+
+            if (!won) {
+                playLose();
+                hapticFeedback('error');
+            } else {
+                hapticFeedback('success');
+            }
 
             const isNewHighScore = state.score > state.highScore;
             if (isNewHighScore) {
                 state.highScore = state.score;
                 localStorage.setItem('mazeHighScore', state.score.toString());
+                hapticFeedback('success');
             }
 
             // Add score to leaderboard
@@ -1560,29 +1962,37 @@
             // Start background music on first game start
             startBackgroundMusic();
 
+            // Request screen wake lock to prevent screen dimming during gameplay
+            requestWakeLock();
+
+            // Haptic feedback for game start
+            hapticFeedback('medium');
+
             generateMaze();
-            
+
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             document.getElementById('game-over').classList.add('hidden');
             document.getElementById('speed-indicator').classList.add('hidden');
-            
+
             updateUI();
-            
+
             // Countdown
             const countdownEl = document.getElementById('countdown');
             countdownEl.classList.remove('hidden');
             let count = 3;
             countdownEl.querySelector('span').textContent = count;
-            
+
             const countInterval = setInterval(() => {
                 count--;
                 if (count > 0) {
                     countdownEl.querySelector('span').textContent = count;
                     playTone(440, 0.1, 'sine', 0.1);
+                    hapticFeedback('light');
                 } else {
                     countdownEl.classList.add('hidden');
                     playTone(880, 0.2, 'sine', 0.15);
+                    hapticFeedback('success');
                     state.gameStarted = true;
                     clearInterval(countInterval);
                 }
@@ -1832,6 +2242,7 @@
 
                 const doMove = () => {
                     if (!state.audioCtx) initAudio();
+                    hapticFeedback('light');
                     if (dir === 'up') movePlayer(0, -1);
                     else if (dir === 'down') movePlayer(0, 1);
                     else if (dir === 'left') movePlayer(-1, 0);
@@ -1841,6 +2252,7 @@
 
                 const startHold = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (!state.audioCtx) initAudio();
                     doMove();
                     // For directional buttons, enable hold-to-move
@@ -1852,6 +2264,7 @@
 
                 const endHold = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (state.touchHoldInterval) {
                         clearInterval(state.touchHoldInterval);
                         state.touchHoldInterval = null;
@@ -1871,7 +2284,9 @@
             if (btnB) {
                 const handleB = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (!state.audioCtx) initAudio();
+                    hapticFeedback('medium');
                     destroyHazard();
                 };
                 btnB.addEventListener('click', handleB);
@@ -1883,7 +2298,9 @@
             if (btnA) {
                 const handleA = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (!state.audioCtx) initAudio();
+                    hapticFeedback('medium');
                     // A button can be confirm/action
                     destroyHazard();
                 };
@@ -1896,7 +2313,9 @@
             if (selectBtn) {
                 const handleSelect = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (!state.audioCtx) initAudio();
+                    hapticFeedback('medium');
                     togglePause();
                 };
                 selectBtn.addEventListener('click', handleSelect);
@@ -1908,7 +2327,9 @@
             if (startGameBtn) {
                 const handleStart = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (!state.audioCtx) initAudio();
+                    hapticFeedback('medium');
                     if (state.gamePaused) {
                         togglePause();
                     } else if (!state.gameStarted && !document.getElementById('menu-screen').classList.contains('hidden')) {
@@ -1923,15 +2344,18 @@
         function togglePause() {
             if (state.gameStarted && !state.gameOver) {
                 state.gamePaused = !state.gamePaused;
+                hapticFeedback('medium');
                 document.getElementById('pause-overlay').classList.toggle('hidden', !state.gamePaused);
                 if (state.gamePaused) {
                     pauseBackgroundMusic();
+                    releaseWakeLock(); // Release wake lock when paused
                     if (state.touchHoldInterval) {
                         clearInterval(state.touchHoldInterval);
                         state.touchHoldInterval = null;
                     }
                 } else {
                     resumeBackgroundMusic();
+                    requestWakeLock(); // Request wake lock when unpaused
                 }
             }
         }
@@ -2069,7 +2493,7 @@
                 nameInput.value = savedName;
             }
 
-            startBtn.addEventListener('click', () => {
+            const handleStart = () => {
                 const name = nameInput.value.trim() || 'Player';
                 state.playerName = name;
                 localStorage.setItem('mazePlayerName', name);
@@ -2077,28 +2501,63 @@
                 document.getElementById('name-screen').classList.add('hidden');
                 document.getElementById('menu-screen').classList.remove('hidden');
                 if (!state.audioCtx) initAudio();
+                hapticFeedback('medium');
+            };
+
+            // Touch handler for START button
+            let startTouchHandled = false;
+            startBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startTouchHandled = true;
+                handleStart();
+            }, { passive: false });
+            startBtn.addEventListener('click', () => {
+                if (startTouchHandled) {
+                    startTouchHandled = false;
+                    return;
+                }
+                handleStart();
             });
 
             nameInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    startBtn.click();
+                    handleStart();
                 }
             });
 
+            // Helper to add both click and touch handlers for screen buttons
+            function addTapHandler(element, handler) {
+                if (!element) return;
+                let touchHandled = false;
+                element.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchHandled = true;
+                    hapticFeedback('light');
+                    handler();
+                }, { passive: false });
+                element.addEventListener('click', (e) => {
+                    if (touchHandled) {
+                        touchHandled = false;
+                        return;
+                    }
+                    handler();
+                });
+            }
+
             // Music toggle button
-            document.getElementById('music-toggle').addEventListener('click', () => {
+            addTapHandler(document.getElementById('music-toggle'), () => {
                 if (!state.musicStarted) startBackgroundMusic();
                 toggleBackgroundMusic();
             });
 
             // Leaderboard buttons
-            document.getElementById('leaderboard-btn').addEventListener('click', showLeaderboard);
-            document.getElementById('gameover-leaderboard-btn').addEventListener('click', showLeaderboard);
-            document.getElementById('close-leaderboard-btn').addEventListener('click', hideLeaderboard);
+            addTapHandler(document.getElementById('leaderboard-btn'), showLeaderboard);
+            addTapHandler(document.getElementById('gameover-leaderboard-btn'), showLeaderboard);
+            addTapHandler(document.getElementById('close-leaderboard-btn'), hideLeaderboard);
 
             // Character selection (using symbol mapping)
             document.querySelectorAll('#characters button').forEach(btn => {
-                btn.addEventListener('click', () => {
+                addTapHandler(btn, () => {
                     if (!state.audioCtx) initAudio();
                     playTone(600, 0.05, 'square', 0.05);
                     const charKey = btn.dataset.char;
@@ -2109,26 +2568,27 @@
                     btn.style.background = '#306230';
                 });
             });
-            
+
             // Play button
-            document.getElementById('play-btn').addEventListener('click', startGame);
-            
+            addTapHandler(document.getElementById('play-btn'), startGame);
+
             // Game over buttons
-            document.getElementById('play-again-btn').addEventListener('click', startGame);
-            document.getElementById('menu-btn').addEventListener('click', () => {
+            addTapHandler(document.getElementById('play-again-btn'), startGame);
+            addTapHandler(document.getElementById('menu-btn'), () => {
                 document.getElementById('game-over').classList.add('hidden');
                 document.getElementById('game-screen').classList.add('hidden');
                 document.getElementById('menu-screen').classList.remove('hidden');
                 document.getElementById('high-score').textContent = state.highScore;
             });
-            
+
             // Pause buttons
-            document.getElementById('resume-btn').addEventListener('click', () => {
+            addTapHandler(document.getElementById('resume-btn'), () => {
                 state.gamePaused = false;
                 document.getElementById('pause-overlay').classList.add('hidden');
                 resumeBackgroundMusic();
+                requestWakeLock();
             });
-            document.getElementById('quit-btn').addEventListener('click', () => {
+            addTapHandler(document.getElementById('quit-btn'), () => {
                 // Save score to leaderboard before quitting
                 if (state.score > 0) {
                     addToLeaderboard(state.playerName, state.score, state.level);
