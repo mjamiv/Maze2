@@ -99,6 +99,18 @@
             50% { opacity: 0.5; }
         }
 
+        /* Ensure hidden class works (Tailwind fallback) */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Screen buttons (BACK, START, PLAY, etc.) */
+        .screen-content button {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
         /* Pixel font base */
         .pixel-font {
             font-family: 'Press Start 2P', monospace;
@@ -2481,7 +2493,7 @@
                 nameInput.value = savedName;
             }
 
-            startBtn.addEventListener('click', () => {
+            const handleStart = () => {
                 const name = nameInput.value.trim() || 'Player';
                 state.playerName = name;
                 localStorage.setItem('mazePlayerName', name);
@@ -2489,28 +2501,63 @@
                 document.getElementById('name-screen').classList.add('hidden');
                 document.getElementById('menu-screen').classList.remove('hidden');
                 if (!state.audioCtx) initAudio();
+                hapticFeedback('medium');
+            };
+
+            // Touch handler for START button
+            let startTouchHandled = false;
+            startBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startTouchHandled = true;
+                handleStart();
+            }, { passive: false });
+            startBtn.addEventListener('click', () => {
+                if (startTouchHandled) {
+                    startTouchHandled = false;
+                    return;
+                }
+                handleStart();
             });
 
             nameInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    startBtn.click();
+                    handleStart();
                 }
             });
 
+            // Helper to add both click and touch handlers for screen buttons
+            function addTapHandler(element, handler) {
+                if (!element) return;
+                let touchHandled = false;
+                element.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchHandled = true;
+                    hapticFeedback('light');
+                    handler();
+                }, { passive: false });
+                element.addEventListener('click', (e) => {
+                    if (touchHandled) {
+                        touchHandled = false;
+                        return;
+                    }
+                    handler();
+                });
+            }
+
             // Music toggle button
-            document.getElementById('music-toggle').addEventListener('click', () => {
+            addTapHandler(document.getElementById('music-toggle'), () => {
                 if (!state.musicStarted) startBackgroundMusic();
                 toggleBackgroundMusic();
             });
 
             // Leaderboard buttons
-            document.getElementById('leaderboard-btn').addEventListener('click', showLeaderboard);
-            document.getElementById('gameover-leaderboard-btn').addEventListener('click', showLeaderboard);
-            document.getElementById('close-leaderboard-btn').addEventListener('click', hideLeaderboard);
+            addTapHandler(document.getElementById('leaderboard-btn'), showLeaderboard);
+            addTapHandler(document.getElementById('gameover-leaderboard-btn'), showLeaderboard);
+            addTapHandler(document.getElementById('close-leaderboard-btn'), hideLeaderboard);
 
             // Character selection (using symbol mapping)
             document.querySelectorAll('#characters button').forEach(btn => {
-                btn.addEventListener('click', () => {
+                addTapHandler(btn, () => {
                     if (!state.audioCtx) initAudio();
                     playTone(600, 0.05, 'square', 0.05);
                     const charKey = btn.dataset.char;
@@ -2521,26 +2568,27 @@
                     btn.style.background = '#306230';
                 });
             });
-            
+
             // Play button
-            document.getElementById('play-btn').addEventListener('click', startGame);
-            
+            addTapHandler(document.getElementById('play-btn'), startGame);
+
             // Game over buttons
-            document.getElementById('play-again-btn').addEventListener('click', startGame);
-            document.getElementById('menu-btn').addEventListener('click', () => {
+            addTapHandler(document.getElementById('play-again-btn'), startGame);
+            addTapHandler(document.getElementById('menu-btn'), () => {
                 document.getElementById('game-over').classList.add('hidden');
                 document.getElementById('game-screen').classList.add('hidden');
                 document.getElementById('menu-screen').classList.remove('hidden');
                 document.getElementById('high-score').textContent = state.highScore;
             });
-            
+
             // Pause buttons
-            document.getElementById('resume-btn').addEventListener('click', () => {
+            addTapHandler(document.getElementById('resume-btn'), () => {
                 state.gamePaused = false;
                 document.getElementById('pause-overlay').classList.add('hidden');
                 resumeBackgroundMusic();
+                requestWakeLock();
             });
-            document.getElementById('quit-btn').addEventListener('click', () => {
+            addTapHandler(document.getElementById('quit-btn'), () => {
                 // Save score to leaderboard before quitting
                 if (state.score > 0) {
                     addToLeaderboard(state.playerName, state.score, state.level);
