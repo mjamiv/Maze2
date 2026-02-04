@@ -288,27 +288,51 @@
             z-index: 2;
         }
 
+        /* D-pad buttons - larger touch targets */
         .dpad-btn {
             position: absolute;
-            width: 34px;
-            height: 34px;
             background: transparent;
             border: none;
             cursor: pointer;
-            z-index: 3;
-            /* Ensure touch events work */
+            z-index: 10;
+            /* Large touch targets */
             touch-action: manipulation;
-            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+            -webkit-tap-highlight-color: rgba(255,255,255,0.2);
         }
 
         .dpad-btn:active {
-            background: rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.15);
         }
 
-        .dpad-up { top: 0; left: 50%; transform: translateX(-50%); }
-        .dpad-down { bottom: 0; left: 50%; transform: translateX(-50%); }
-        .dpad-left { left: 0; top: 50%; transform: translateY(-50%); }
-        .dpad-right { right: 0; top: 50%; transform: translateY(-50%); }
+        /* Position buttons to cover the D-pad arms with generous touch areas */
+        .dpad-up {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 45px;
+        }
+        .dpad-down {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 45px;
+        }
+        .dpad-left {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 45px;
+            height: 50px;
+        }
+        .dpad-right {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 45px;
+            height: 50px;
+        }
 
         /* Action buttons */
         .action-btn {
@@ -612,9 +636,14 @@
                 height: 34px;
             }
 
-            .dpad-btn {
-                width: 34px;
-                height: 34px;
+            /* Keep D-pad button touch targets large */
+            .dpad-up, .dpad-down {
+                width: 50px;
+                height: 45px;
+            }
+            .dpad-left, .dpad-right {
+                width: 45px;
+                height: 50px;
             }
 
             /* Fixed action buttons */
@@ -654,36 +683,46 @@
             }
         }
 
-        /* Small screens - reduce control size */
+        /* Small screens - reduce control size but keep touch targets large */
         @media (max-width: 640px) and (max-height: 650px) {
             .controls-area {
-                min-height: 130px;
-                padding: 6px 10px 12px 10px;
+                min-height: 120px;
+                padding: 4px 8px 10px 8px;
             }
 
             .dpad-container {
-                width: 85px;
-                height: 85px;
+                width: 80px;
+                height: 80px;
             }
 
             .dpad-vertical {
-                width: 29px;
-                height: 85px;
+                width: 27px;
+                height: 80px;
             }
 
             .dpad-horizontal {
-                width: 85px;
-                height: 29px;
+                width: 80px;
+                height: 27px;
             }
 
-            .dpad-center, .dpad-btn {
-                width: 29px;
-                height: 29px;
+            .dpad-center {
+                width: 27px;
+                height: 27px;
+            }
+
+            /* Keep touch targets at least 44px for accessibility */
+            .dpad-up, .dpad-down {
+                width: 44px;
+                height: 40px;
+            }
+            .dpad-left, .dpad-right {
+                width: 40px;
+                height: 44px;
             }
 
             .action-btn {
-                width: 42px;
-                height: 42px;
+                width: 40px;
+                height: 40px;
                 font-size: 10px;
             }
         }
@@ -710,9 +749,19 @@
                 height: 40px;
             }
 
-            .dpad-center, .dpad-btn {
+            .dpad-center {
                 width: 40px;
                 height: 40px;
+            }
+
+            /* Larger touch targets on big screens */
+            .dpad-up, .dpad-down {
+                width: 55px;
+                height: 50px;
+            }
+            .dpad-left, .dpad-right {
+                width: 50px;
+                height: 55px;
             }
 
             .action-btn {
@@ -769,23 +818,33 @@
 
             .dpad-container {
                 order: 1;
-                width: min(80px, 18vh) !important;
-                height: min(80px, 18vh) !important;
+                width: 80px !important;
+                height: 80px !important;
             }
 
             .dpad-vertical {
-                width: min(28px, 6vh) !important;
-                height: min(80px, 18vh) !important;
+                width: 28px !important;
+                height: 80px !important;
             }
 
             .dpad-horizontal {
-                width: min(80px, 18vh) !important;
-                height: min(28px, 6vh) !important;
+                width: 80px !important;
+                height: 28px !important;
             }
 
-            .dpad-center, .dpad-btn {
-                width: min(28px, 6vh) !important;
-                height: min(28px, 6vh) !important;
+            .dpad-center {
+                width: 28px !important;
+                height: 28px !important;
+            }
+
+            /* Keep touch targets usable in landscape */
+            .dpad-up, .dpad-down {
+                width: 44px !important;
+                height: 38px !important;
+            }
+            .dpad-left, .dpad-right {
+                width: 38px !important;
+                height: 44px !important;
             }
 
             .action-buttons {
