@@ -585,56 +585,53 @@
             /* Controls area - fixed size at bottom */
             .controls-area {
                 flex: 0 0 auto;
-                padding: 8px 16px 12px 16px;
-                min-height: 160px;
-                max-height: 200px;
-                /* Ensure touch events work on controls */
-                touch-action: manipulation;
+                padding: 10px 12px 16px 12px;
+                min-height: 150px;
             }
 
             .desktop-only { display: none !important; }
 
-            /* Responsive D-pad sizing based on screen width */
+            /* Fixed D-pad sizing for mobile */
             .dpad-container {
-                width: min(110px, 28vw);
-                height: min(110px, 28vw);
+                width: 100px;
+                height: 100px;
             }
 
             .dpad-vertical {
-                width: min(38px, 9.5vw);
-                height: min(110px, 28vw);
+                width: 34px;
+                height: 100px;
             }
 
             .dpad-horizontal {
-                width: min(110px, 28vw);
-                height: min(38px, 9.5vw);
+                width: 100px;
+                height: 34px;
             }
 
             .dpad-center {
-                width: min(38px, 9.5vw);
-                height: min(38px, 9.5vw);
+                width: 34px;
+                height: 34px;
             }
 
             .dpad-btn {
-                width: min(38px, 9.5vw);
-                height: min(38px, 9.5vw);
+                width: 34px;
+                height: 34px;
             }
 
-            /* Responsive action buttons */
+            /* Fixed action buttons */
             .action-btn {
-                width: min(52px, 14vw);
-                height: min(52px, 14vw);
-                font-size: min(12px, 3vw);
+                width: 48px;
+                height: 48px;
+                font-size: 11px;
             }
 
-            /* Responsive menu buttons */
+            /* Fixed menu buttons */
             .menu-btn {
-                width: min(50px, 12vw);
-                height: min(14px, 3.5vw);
+                width: 44px;
+                height: 12px;
             }
 
             .menu-btn-label {
-                font-size: min(7px, 1.8vw) !important;
+                font-size: 6px !important;
             }
 
             /* Speaker smaller on mobile */
@@ -657,208 +654,71 @@
             }
         }
 
-        /* Small mobile screens (iPhone SE, older iPhones) */
-        @media (max-width: 640px) and (max-height: 700px) {
-            .brand-area {
-                padding: 4px 8px;
-                min-height: 28px;
-            }
-
-            .brand-text {
-                font-size: 12px;
-            }
-
-            .screen-bezel {
-                padding: 6px;
-                margin-bottom: 6px;
-            }
-
+        /* Small screens - reduce control size */
+        @media (max-width: 640px) and (max-height: 650px) {
             .controls-area {
-                min-height: 140px;
-                max-height: 160px;
-                padding: 6px 12px 10px 12px;
+                min-height: 130px;
+                padding: 6px 10px 12px 10px;
             }
 
             .dpad-container {
-                width: min(90px, 26vw);
-                height: min(90px, 26vw);
+                width: 85px;
+                height: 85px;
             }
 
             .dpad-vertical {
-                width: min(32px, 9vw);
-                height: min(90px, 26vw);
+                width: 29px;
+                height: 85px;
             }
 
             .dpad-horizontal {
-                width: min(90px, 26vw);
-                height: min(32px, 9vw);
+                width: 85px;
+                height: 29px;
             }
 
             .dpad-center, .dpad-btn {
-                width: min(32px, 9vw);
-                height: min(32px, 9vw);
+                width: 29px;
+                height: 29px;
             }
 
             .action-btn {
-                width: min(44px, 12vw);
-                height: min(44px, 12vw);
-                font-size: min(10px, 2.8vw);
+                width: 42px;
+                height: 42px;
+                font-size: 10px;
             }
         }
 
-        /* Larger mobile screens (iPhone Pro Max, Plus models) */
+        /* Large screens - increase control size */
         @media (max-width: 640px) and (min-height: 800px) {
             .controls-area {
-                min-height: 180px;
-                max-height: 220px;
-            }
-
-            .dpad-container {
-                width: 120px;
-                height: 120px;
-            }
-
-            .dpad-vertical {
-                width: 42px;
-                height: 120px;
-            }
-
-            .dpad-horizontal {
-                width: 120px;
-                height: 42px;
-            }
-
-            .dpad-center, .dpad-btn {
-                width: 42px;
-                height: 42px;
-            }
-
-            .action-btn {
-                width: 56px;
-                height: 56px;
-                font-size: 14px;
-            }
-        }
-
-        /* ===== SPECIFIC iPHONE MODEL OPTIMIZATIONS ===== */
-
-        /* iPhone SE (3rd gen) - 375x667 @2x */
-        @media (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) {
-            .controls-area {
-                min-height: 145px;
-                max-height: 155px;
-            }
-            .screen-content {
-                padding: 4px !important;
-            }
-        }
-
-        /* iPhone 12/13/14 mini - 375x812 @3x */
-        @media (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 165px;
-                max-height: 180px;
-            }
-        }
-
-        /* iPhone 12/13/14/15 - 390x844 @3x */
-        @media (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
                 min-height: 170px;
-                max-height: 190px;
+                padding: 12px 16px 20px 16px;
             }
+
             .dpad-container {
                 width: 115px;
                 height: 115px;
             }
+
+            .dpad-vertical {
+                width: 40px;
+                height: 115px;
+            }
+
+            .dpad-horizontal {
+                width: 115px;
+                height: 40px;
+            }
+
+            .dpad-center, .dpad-btn {
+                width: 40px;
+                height: 40px;
+            }
+
             .action-btn {
                 width: 54px;
                 height: 54px;
-            }
-        }
-
-        /* iPhone 14/15 Pro - 393x852 @3x */
-        @media (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 175px;
-                max-height: 195px;
-            }
-        }
-
-        /* iPhone 12/13/14 Plus & Pro Max - 428x926 @3x */
-        @media (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 190px;
-                max-height: 215px;
-            }
-            .dpad-container {
-                width: 125px;
-                height: 125px;
-            }
-            .dpad-vertical {
-                width: 44px;
-                height: 125px;
-            }
-            .dpad-horizontal {
-                width: 125px;
-                height: 44px;
-            }
-            .dpad-center, .dpad-btn {
-                width: 44px;
-                height: 44px;
-            }
-            .action-btn {
-                width: 58px;
-                height: 58px;
-                font-size: 15px;
-            }
-        }
-
-        /* iPhone 14/15 Plus - 430x932 @3x */
-        @media (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 195px;
-                max-height: 220px;
-            }
-        }
-
-        /* iPhone 14/15 Pro Max - 430x932 @3x (same as Plus) */
-        /* Uses same rules as 430x932 above */
-
-        /* iPhone 16 Pro - 402x874 @3x */
-        @media (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 180px;
-                max-height: 200px;
-            }
-        }
-
-        /* iPhone 16 Pro Max - 440x956 @3x */
-        @media (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) {
-            .controls-area {
-                min-height: 200px;
-                max-height: 230px;
-            }
-            .dpad-container {
-                width: 130px;
-                height: 130px;
-            }
-            .dpad-vertical {
-                width: 46px;
-                height: 130px;
-            }
-            .dpad-horizontal {
-                width: 130px;
-                height: 46px;
-            }
-            .dpad-center, .dpad-btn {
-                width: 46px;
-                height: 46px;
-            }
-            .action-btn {
-                width: 60px;
-                height: 60px;
-                font-size: 16px;
+                font-size: 13px;
             }
         }
 
@@ -1362,41 +1222,23 @@
             setTimeout(hideLoadingOverlay, 500);
         }
 
-        // ===== PREVENT UNWANTED TOUCH BEHAVIORS =====
-        // Only prevent multi-touch (pinch zoom)
+        // ===== SIMPLE TOUCH HANDLING =====
+        // Prevent zoom on double-tap and pinch (minimal intervention)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+
+        // Prevent pinch zoom
         document.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) {
                 e.preventDefault();
             }
         }, { passive: false });
-
-        // Prevent pull-to-refresh only on the screen area, not controls
-        document.addEventListener('touchmove', (e) => {
-            const target = e.target;
-            // Allow movement on buttons and scrollable areas
-            if (target.closest('.mobile-btn') ||
-                target.closest('.controls-area') ||
-                target.closest('#menu-screen') ||
-                target.closest('#leaderboard-list') ||
-                target.closest('input') ||
-                target.closest('button')) {
-                return; // Don't prevent default for these
-            }
-            // Prevent pull-to-refresh on other areas
-            e.preventDefault();
-        }, { passive: false });
-
-        // Prevent iOS gesture events (pinch zoom)
-        document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
-        document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
-        document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
-
-        // Prevent context menu on long press (but allow button taps)
-        document.addEventListener('contextmenu', (e) => {
-            if (e.target.closest('.gameboy-device') && !e.target.closest('input')) {
-                e.preventDefault();
-            }
-        });
 
         // ===== RETINA DISPLAY SUPPORT =====
         function getDevicePixelRatio() {
@@ -2235,110 +2077,73 @@
                 state.keysPressed[e.code] = false;
             });
 
-            // D-Pad and action buttons on the GameyBoy device
-            document.querySelectorAll('.mobile-btn').forEach(btn => {
-                const dir = btn.dataset.dir;
-                if (!dir) return;
+            // ===== SIMPLE D-PAD HANDLING =====
+            // D-Pad buttons
+            const dpadUp = document.querySelector('.dpad-up');
+            const dpadDown = document.querySelector('.dpad-down');
+            const dpadLeft = document.querySelector('.dpad-left');
+            const dpadRight = document.querySelector('.dpad-right');
+
+            function setupDpadButton(btn, dx, dy) {
+                if (!btn) return;
+                let holdInterval = null;
 
                 const doMove = () => {
                     if (!state.audioCtx) initAudio();
-                    hapticFeedback('light');
-                    if (dir === 'up') movePlayer(0, -1);
-                    else if (dir === 'down') movePlayer(0, 1);
-                    else if (dir === 'left') movePlayer(-1, 0);
-                    else if (dir === 'right') movePlayer(1, 0);
-                    else if (dir === 'action') destroyHazard();
+                    movePlayer(dx, dy);
                 };
 
-                const startHold = (e) => {
+                const onStart = (e) => {
                     e.preventDefault();
-                    e.stopPropagation();
-                    if (!state.audioCtx) initAudio();
                     doMove();
-                    // For directional buttons, enable hold-to-move
-                    if (['up', 'down', 'left', 'right'].includes(dir)) {
-                        if (state.touchHoldInterval) clearInterval(state.touchHoldInterval);
-                        state.touchHoldInterval = setInterval(doMove, 100);
+                    holdInterval = setInterval(doMove, 120);
+                };
+
+                const onEnd = (e) => {
+                    e.preventDefault();
+                    if (holdInterval) {
+                        clearInterval(holdInterval);
+                        holdInterval = null;
                     }
                 };
 
-                const endHold = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (state.touchHoldInterval) {
-                        clearInterval(state.touchHoldInterval);
-                        state.touchHoldInterval = null;
-                    }
-                };
-
-                btn.addEventListener('touchstart', startHold, { passive: false });
-                btn.addEventListener('touchend', endHold, { passive: false });
-                btn.addEventListener('touchcancel', endHold, { passive: false });
-                btn.addEventListener('mousedown', startHold);
-                btn.addEventListener('mouseup', endHold);
-                btn.addEventListener('mouseleave', endHold);
-            });
-
-            // B Button - destroy hazard
-            const btnB = document.getElementById('btn-b');
-            if (btnB) {
-                const handleB = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!state.audioCtx) initAudio();
-                    hapticFeedback('medium');
-                    destroyHazard();
-                };
-                btnB.addEventListener('click', handleB);
-                btnB.addEventListener('touchstart', handleB, { passive: false });
+                btn.addEventListener('touchstart', onStart, { passive: false });
+                btn.addEventListener('touchend', onEnd, { passive: false });
+                btn.addEventListener('touchcancel', onEnd, { passive: false });
+                btn.addEventListener('mousedown', onStart);
+                btn.addEventListener('mouseup', onEnd);
+                btn.addEventListener('mouseleave', onEnd);
             }
 
-            // A Button - could be used for future features, for now same as B
-            const btnA = document.getElementById('btn-a');
-            if (btnA) {
-                const handleA = (e) => {
+            setupDpadButton(dpadUp, 0, -1);
+            setupDpadButton(dpadDown, 0, 1);
+            setupDpadButton(dpadLeft, -1, 0);
+            setupDpadButton(dpadRight, 1, 0);
+
+            // A and B Buttons
+            function setupActionButton(btn, action) {
+                if (!btn) return;
+                const handler = (e) => {
                     e.preventDefault();
-                    e.stopPropagation();
                     if (!state.audioCtx) initAudio();
-                    hapticFeedback('medium');
-                    // A button can be confirm/action
-                    destroyHazard();
+                    action();
                 };
-                btnA.addEventListener('click', handleA);
-                btnA.addEventListener('touchstart', handleA, { passive: false });
+                btn.addEventListener('touchstart', handler, { passive: false });
+                btn.addEventListener('click', handler);
             }
 
-            // SELECT button - pause
-            const selectBtn = document.getElementById('select-btn');
-            if (selectBtn) {
-                const handleSelect = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!state.audioCtx) initAudio();
-                    hapticFeedback('medium');
+            setupActionButton(document.getElementById('btn-a'), destroyHazard);
+            setupActionButton(document.getElementById('btn-b'), destroyHazard);
+
+            // SELECT and START buttons
+            setupActionButton(document.getElementById('select-btn'), togglePause);
+            setupActionButton(document.getElementById('start-game-btn'), () => {
+                if (state.gamePaused) {
                     togglePause();
-                };
-                selectBtn.addEventListener('click', handleSelect);
-                selectBtn.addEventListener('touchstart', handleSelect, { passive: false });
-            }
-
-            // START button - start game or unpause
-            const startGameBtn = document.getElementById('start-game-btn');
-            if (startGameBtn) {
-                const handleStart = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!state.audioCtx) initAudio();
-                    hapticFeedback('medium');
-                    if (state.gamePaused) {
-                        togglePause();
-                    } else if (!state.gameStarted && !document.getElementById('menu-screen').classList.contains('hidden')) {
-                        startGame();
-                    }
-                };
-                startGameBtn.addEventListener('click', handleStart);
-                startGameBtn.addEventListener('touchstart', handleStart, { passive: false });
-            }
+                } else if (!state.gameStarted && !document.getElementById('menu-screen').classList.contains('hidden')) {
+                    startGame();
+                }
+            });
         }
 
         function togglePause() {
