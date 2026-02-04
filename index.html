@@ -2,18 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6b6b7b">
     <title>Maze Runner - GameyBoy</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Dynamic viewport height - set by JS for iOS Safari compatibility */
+            --vh: 1vh;
+            --app-height: 100vh;
+        }
+
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
             font-family: 'Press Start 2P', monospace;
             touch-action: manipulation;
@@ -21,7 +30,12 @@
             -webkit-user-select: none;
             user-select: none;
             height: 100%;
+            height: var(--app-height);
+            width: 100%;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            /* Prevent pull-to-refresh and overscroll */
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* Pixel font base */
@@ -361,46 +375,58 @@
                 position: fixed;
                 width: 100%;
                 height: 100%;
+                height: var(--app-height);
+                /* Prevent iOS rubber-banding */
+                overscroll-behavior: none;
+            }
+
+            /* Remove outer body padding on mobile */
+            body.min-h-screen {
+                padding: 0 !important;
             }
 
             .gameboy-device {
-                position: fixed;
+                position: fixed !important;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                width: 100%;
-                height: 100%;
-                max-width: 100%;
-                border-radius: 0;
+                width: 100% !important;
+                height: 100% !important;
+                height: var(--app-height) !important;
+                max-width: none !important;
+                border-radius: 0 !important;
                 padding: 8px;
                 display: flex;
                 flex-direction: column;
-                box-shadow: none;
+                box-shadow: none !important;
+                margin: 0 !important;
             }
 
             .gameboy-device::before {
                 display: none;
             }
 
-            /* Brand area - compact */
+            /* Brand area - compact but visible */
             .brand-area {
                 flex-shrink: 0;
-                padding: 4px 8px;
+                padding: 6px 12px;
+                min-height: 32px;
             }
 
             .brand-text {
                 font-size: 14px;
             }
 
-            /* Screen bezel - takes available space */
+            /* Screen bezel - takes available space dynamically */
             .screen-bezel {
-                flex: 1;
+                flex: 1 1 auto;
                 display: flex;
                 flex-direction: column;
                 padding: 8px;
                 margin-bottom: 8px;
                 min-height: 0;
+                overflow: hidden;
             }
 
             .screen-bezel::before {
@@ -408,150 +434,308 @@
             }
 
             .lcd-screen {
-                flex: 1;
+                flex: 1 1 auto;
                 display: flex;
                 flex-direction: column;
-                min-height: 0;
-            }
-
-            .screen-content {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                padding: 8px !important;
                 min-height: 0;
                 overflow: hidden;
             }
 
+            .screen-content {
+                flex: 1 1 auto;
+                display: flex;
+                flex-direction: column;
+                padding: 6px !important;
+                min-height: 0 !important;
+                overflow: hidden;
+                height: auto !important;
+            }
+
             .screen-content > div {
-                flex: 1;
+                flex: 1 1 auto;
                 display: flex;
                 flex-direction: column;
                 min-height: 0;
             }
 
             #game-screen {
-                flex: 1 !important;
+                flex: 1 1 auto !important;
                 justify-content: center !important;
+                align-items: center !important;
+                overflow: hidden;
             }
 
             #game-screen canvas {
                 max-width: 100%;
                 max-height: 100%;
                 object-fit: contain;
+                display: block;
             }
 
             /* Menu screens - scrollable if needed */
             #name-screen, #menu-screen {
                 overflow-y: auto;
+                overflow-x: hidden;
                 justify-content: flex-start !important;
-                padding-top: 10px;
+                padding-top: 8px;
+                -webkit-overflow-scrolling: touch;
             }
 
             .screen-content {
                 font-size: 8px;
             }
 
-            /* Controls area - fixed at bottom */
+            /* Controls area - fixed size at bottom */
             .controls-area {
-                flex-shrink: 0;
-                padding: 8px 12px 20px 12px;
-                min-height: 180px;
+                flex: 0 0 auto;
+                padding: 8px 16px 12px 16px;
+                min-height: 160px;
+                max-height: 200px;
             }
 
             .desktop-only { display: none !important; }
 
-            /* Larger D-pad for mobile */
+            /* Responsive D-pad sizing based on screen width */
             .dpad-container {
-                width: 110px;
-                height: 110px;
+                width: min(110px, 28vw);
+                height: min(110px, 28vw);
             }
 
             .dpad-vertical {
-                width: 38px;
-                height: 110px;
+                width: min(38px, 9.5vw);
+                height: min(110px, 28vw);
             }
 
             .dpad-horizontal {
-                width: 110px;
-                height: 38px;
+                width: min(110px, 28vw);
+                height: min(38px, 9.5vw);
             }
 
             .dpad-center {
-                width: 38px;
-                height: 38px;
+                width: min(38px, 9.5vw);
+                height: min(38px, 9.5vw);
             }
 
             .dpad-btn {
-                width: 38px;
-                height: 38px;
+                width: min(38px, 9.5vw);
+                height: min(38px, 9.5vw);
             }
 
-            /* Larger action buttons */
+            /* Responsive action buttons */
             .action-btn {
-                width: 52px;
-                height: 52px;
-                font-size: 12px;
+                width: min(52px, 14vw);
+                height: min(52px, 14vw);
+                font-size: min(12px, 3vw);
             }
 
-            /* Larger menu buttons */
+            /* Responsive menu buttons */
             .menu-btn {
-                width: 50px;
-                height: 14px;
+                width: min(50px, 12vw);
+                height: min(14px, 3.5vw);
             }
 
             .menu-btn-label {
-                font-size: 7px !important;
+                font-size: min(7px, 1.8vw) !important;
             }
 
             /* Speaker smaller on mobile */
             .speaker-grille {
-                transform: rotate(-25deg) scale(0.8);
+                transform: rotate(-25deg) scale(0.7);
             }
 
-            /* Safe area for notched phones */
+            /* Safe area for notched phones (iPhone X and later) */
             @supports (padding-top: env(safe-area-inset-top)) {
                 .gameboy-device {
-                    padding-top: calc(8px + env(safe-area-inset-top));
-                    padding-bottom: calc(20px + env(safe-area-inset-bottom));
-                    padding-left: calc(8px + env(safe-area-inset-left));
-                    padding-right: calc(8px + env(safe-area-inset-right));
+                    padding-top: max(8px, env(safe-area-inset-top));
+                    padding-bottom: max(12px, env(safe-area-inset-bottom));
+                    padding-left: max(8px, env(safe-area-inset-left));
+                    padding-right: max(8px, env(safe-area-inset-right));
+                }
+
+                .controls-area {
+                    padding-bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px));
                 }
             }
         }
 
-        /* Landscape mobile */
-        @media (max-width: 640px) and (orientation: landscape) {
-            .gameboy-device {
-                flex-direction: row;
-                padding: 8px;
+        /* Small mobile screens (iPhone SE, older iPhones) */
+        @media (max-width: 640px) and (max-height: 700px) {
+            .brand-area {
+                padding: 4px 8px;
+                min-height: 28px;
             }
 
-            .brand-area {
-                display: none;
+            .brand-text {
+                font-size: 12px;
             }
 
             .screen-bezel {
-                flex: 1;
-                margin-bottom: 0;
-                margin-right: 8px;
+                padding: 6px;
+                margin-bottom: 6px;
             }
 
             .controls-area {
-                width: 200px;
-                min-height: auto;
+                min-height: 140px;
+                max-height: 160px;
+                padding: 6px 12px 10px 12px;
+            }
+
+            .dpad-container {
+                width: min(90px, 26vw);
+                height: min(90px, 26vw);
+            }
+
+            .dpad-vertical {
+                width: min(32px, 9vw);
+                height: min(90px, 26vw);
+            }
+
+            .dpad-horizontal {
+                width: min(90px, 26vw);
+                height: min(32px, 9vw);
+            }
+
+            .dpad-center, .dpad-btn {
+                width: min(32px, 9vw);
+                height: min(32px, 9vw);
+            }
+
+            .action-btn {
+                width: min(44px, 12vw);
+                height: min(44px, 12vw);
+                font-size: min(10px, 2.8vw);
+            }
+        }
+
+        /* Larger mobile screens (iPhone Pro Max, Plus models) */
+        @media (max-width: 640px) and (min-height: 800px) {
+            .controls-area {
+                min-height: 180px;
+                max-height: 220px;
+            }
+
+            .dpad-container {
+                width: 120px;
+                height: 120px;
+            }
+
+            .dpad-vertical {
+                width: 42px;
+                height: 120px;
+            }
+
+            .dpad-horizontal {
+                width: 120px;
+                height: 42px;
+            }
+
+            .dpad-center, .dpad-btn {
+                width: 42px;
+                height: 42px;
+            }
+
+            .action-btn {
+                width: 56px;
+                height: 56px;
+                font-size: 14px;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+            html, body {
+                height: 100%;
+                height: var(--app-height);
+            }
+
+            .gameboy-device {
+                flex-direction: row !important;
+                padding: 6px !important;
+                height: var(--app-height) !important;
+            }
+
+            .brand-area {
+                display: none !important;
+            }
+
+            .screen-bezel {
+                flex: 1 1 auto;
+                margin-bottom: 0 !important;
+                margin-right: 6px;
+                max-width: calc(100% - 180px);
+            }
+
+            .controls-area {
+                width: 170px;
+                min-width: 150px;
+                min-height: auto !important;
+                max-height: none !important;
                 flex-direction: column;
-                justify-content: center;
-                padding: 8px;
+                justify-content: space-around;
+                align-items: center;
+                padding: 6px !important;
             }
 
             .controls-area > div {
                 flex-direction: column !important;
-                gap: 16px !important;
+                gap: 8px !important;
             }
 
             .center-controls {
                 flex-direction: row !important;
+                order: 2;
+            }
+
+            .dpad-container {
+                order: 1;
+                width: min(80px, 18vh) !important;
+                height: min(80px, 18vh) !important;
+            }
+
+            .dpad-vertical {
+                width: min(28px, 6vh) !important;
+                height: min(80px, 18vh) !important;
+            }
+
+            .dpad-horizontal {
+                width: min(80px, 18vh) !important;
+                height: min(28px, 6vh) !important;
+            }
+
+            .dpad-center, .dpad-btn {
+                width: min(28px, 6vh) !important;
+                height: min(28px, 6vh) !important;
+            }
+
+            .action-buttons {
+                order: 3;
+            }
+
+            .action-btn {
+                width: min(40px, 10vh) !important;
+                height: min(40px, 10vh) !important;
+                font-size: min(10px, 2.5vh) !important;
+            }
+
+            .speaker-grille {
+                display: none !important;
+            }
+
+            .menu-btn {
+                width: min(36px, 9vh);
+                height: min(10px, 2.5vh);
+            }
+
+            .menu-btn-label {
+                font-size: min(5px, 1.3vh) !important;
+            }
+
+            /* Safe area in landscape */
+            @supports (padding-left: env(safe-area-inset-left)) {
+                .gameboy-device {
+                    padding-left: max(6px, env(safe-area-inset-left));
+                    padding-right: max(6px, env(safe-area-inset-right));
+                }
             }
         }
 
@@ -799,6 +983,33 @@
     </div>
 
     <script>
+        // ===== VIEWPORT HEIGHT FIX FOR iOS SAFARI =====
+        // iOS Safari has dynamic toolbars that change viewport height
+        // This calculates the actual visible height and sets CSS custom property
+        function setAppHeight() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+        }
+
+        // Set initial height immediately
+        setAppHeight();
+
+        // Update on resize and orientation change
+        window.addEventListener('resize', setAppHeight);
+        window.addEventListener('orientationchange', () => {
+            // Delay to allow browser to finish rotation
+            setTimeout(setAppHeight, 100);
+            setTimeout(setAppHeight, 300);
+        });
+
+        // Also update when page visibility changes (fixes iOS Safari issues)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                setTimeout(setAppHeight, 100);
+            }
+        });
+
         // ===== GAME STATE =====
         const state = {
             canvas: null,
@@ -1728,32 +1939,72 @@
         // ===== SETUP =====
         function calculateTileSize() {
             const isMobileFullscreen = window.innerWidth <= 640;
+            // Use actual viewport height (accounts for iOS Safari address bar)
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
 
             if (isMobileFullscreen) {
                 // Mobile fullscreen - calculate based on available screen space
-                const isLandscape = window.innerWidth > window.innerHeight;
+                const isLandscape = viewportWidth > viewportHeight;
+
+                // Get safe area insets if available
+                const safeAreaTop = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-top') || '0');
+                const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-bottom') || '0');
 
                 if (isLandscape) {
                     // Landscape: screen takes left portion, controls on right
-                    const screenWidth = window.innerWidth - 220; // Reserve space for controls
-                    const screenHeight = window.innerHeight - 40; // Small padding
-                    const maxTileW = Math.floor((screenWidth - 32) / state.mazeWidth);
-                    const maxTileH = Math.floor((screenHeight - 60) / state.mazeHeight);
-                    return Math.min(Math.max(Math.min(maxTileW, maxTileH), 12), 24);
+                    const controlsWidth = Math.min(180, viewportWidth * 0.25);
+                    const availableWidth = viewportWidth - controlsWidth - 24; // Padding
+                    const availableHeight = viewportHeight - 24; // Minimal padding
+
+                    const maxTileW = Math.floor(availableWidth / state.mazeWidth);
+                    const maxTileH = Math.floor(availableHeight / state.mazeHeight);
+                    return Math.min(Math.max(Math.min(maxTileW, maxTileH), 12), 28);
                 } else {
                     // Portrait: screen on top, controls below
-                    const controlsHeight = 200; // Space for controls at bottom
-                    const brandHeight = 40; // Brand area
-                    const screenHeight = window.innerHeight - controlsHeight - brandHeight - 60;
-                    const screenWidth = window.innerWidth - 40; // Side padding
+                    // Dynamically calculate controls height based on screen height
+                    let controlsHeight, brandHeight, padding;
 
-                    const maxTileW = Math.floor(screenWidth / state.mazeWidth);
-                    const maxTileH = Math.floor(screenHeight / state.mazeHeight);
-                    return Math.min(Math.max(Math.min(maxTileW, maxTileH), 14), 22);
+                    if (viewportHeight <= 600) {
+                        // Very small screens (iPhone SE)
+                        controlsHeight = 140;
+                        brandHeight = 28;
+                        padding = 40;
+                    } else if (viewportHeight <= 700) {
+                        // Small screens (iPhone mini)
+                        controlsHeight = 160;
+                        brandHeight = 32;
+                        padding = 50;
+                    } else if (viewportHeight <= 850) {
+                        // Medium screens (iPhone, iPhone Pro)
+                        controlsHeight = 175;
+                        brandHeight = 36;
+                        padding = 55;
+                    } else {
+                        // Large screens (iPhone Plus, Pro Max)
+                        controlsHeight = 200;
+                        brandHeight = 40;
+                        padding = 60;
+                    }
+
+                    // Account for safe areas on notched phones
+                    const safeAreaPadding = safeAreaTop + safeAreaBottom;
+
+                    const availableHeight = viewportHeight - controlsHeight - brandHeight - padding - safeAreaPadding;
+                    const availableWidth = viewportWidth - 32; // Side padding and bezel
+
+                    const maxTileW = Math.floor(availableWidth / state.mazeWidth);
+                    const maxTileH = Math.floor(availableHeight / state.mazeHeight);
+
+                    // Allow larger tiles on bigger screens
+                    const maxTileSize = viewportHeight > 800 ? 26 : (viewportHeight > 700 ? 24 : 22);
+                    const minTileSize = viewportHeight < 600 ? 12 : 14;
+
+                    return Math.min(Math.max(Math.min(maxTileW, maxTileH), minTileSize), maxTileSize);
                 }
             } else {
                 // Desktop - original calculation
-                const deviceWidth = Math.min(window.innerWidth - 16, 400);
+                const deviceWidth = Math.min(viewportWidth - 16, 400);
                 const screenWidth = deviceWidth - 70;
                 const screenHeight = 240;
 
@@ -1768,6 +2019,9 @@
             // Debounce resize for performance
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
+                // Update viewport height first
+                setAppHeight();
+                // Then recalculate tile size
                 state.tileSize = calculateTileSize();
                 state.canvas.width = state.mazeWidth * state.tileSize;
                 state.canvas.height = state.mazeHeight * state.tileSize;
@@ -1778,6 +2032,9 @@
         }
 
         function setup() {
+            // Ensure viewport height is set correctly for mobile
+            setAppHeight();
+
             state.canvas = document.getElementById('game-canvas');
             state.ctx = state.canvas.getContext('2d');
             state.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -1790,6 +2047,8 @@
             window.addEventListener('orientationchange', () => {
                 // Small delay to let the browser finish rotating
                 setTimeout(resizeCanvas, 150);
+                // Additional delayed resize to catch any late layout changes
+                setTimeout(resizeCanvas, 500);
             });
 
             // Load leaderboard
