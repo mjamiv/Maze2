@@ -1624,9 +1624,24 @@
         // ===== AUDIO =====
         function initAudio() {
             state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Master gain → compressor → destination
+            // Normalizes all SFX to peak at ~-6dBFS (industry standard)
+            state.masterGain = state.audioCtx.createGain();
+            state.masterGain.gain.value = 0.3;
+
+            state.compressor = state.audioCtx.createDynamicsCompressor();
+            state.compressor.threshold.value = -24;
+            state.compressor.knee.value = 12;
+            state.compressor.ratio.value = 8;
+            state.compressor.attack.value = 0.003;
+            state.compressor.release.value = 0.15;
+
+            state.masterGain.connect(state.compressor);
+            state.compressor.connect(state.audioCtx.destination);
         }
 
-        function playTone(freq, duration, type = 'sine', volume = 0.1) {
+        function playTone(freq, duration, type = 'sine', volume = 0.04) {
             if (!state.sfxEnabled || !state.audioCtx) return;
             try {
                 const osc = state.audioCtx.createOscillator();
@@ -1636,35 +1651,35 @@
                 gain.gain.value = volume;
                 gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + duration);
                 osc.connect(gain);
-                gain.connect(state.audioCtx.destination);
+                gain.connect(state.masterGain || state.audioCtx.destination);
                 osc.start();
                 osc.stop(state.audioCtx.currentTime + duration);
             } catch(e) {}
         }
 
-        // Chiptune-style sounds using square waves
-        function playMove() { playTone(440, 0.03, 'square', 0.04); }
+        // Chiptune-style sounds — volumes normalized for -6dBFS peak through master chain
+        function playMove() { playTone(440, 0.03, 'square', 0.015); }
         function playCollect() {
-            playTone(880, 0.08, 'square', 0.08);
-            setTimeout(() => playTone(1100, 0.08, 'square', 0.08), 40);
+            playTone(880, 0.08, 'square', 0.03);
+            setTimeout(() => playTone(1100, 0.08, 'square', 0.03), 40);
         }
-        function playDestroy() { playTone(150, 0.15, 'square', 0.08); }
+        function playDestroy() { playTone(150, 0.15, 'square', 0.03); }
         function playPowerup() {
-            playTone(523, 0.08, 'square', 0.08);
-            setTimeout(() => playTone(659, 0.08, 'square', 0.08), 60);
-            setTimeout(() => playTone(784, 0.12, 'square', 0.08), 120);
+            playTone(523, 0.08, 'square', 0.03);
+            setTimeout(() => playTone(659, 0.08, 'square', 0.03), 60);
+            setTimeout(() => playTone(784, 0.12, 'square', 0.03), 120);
         }
         function playWin() {
-            [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.15, 'square', 0.08), i * 80));
+            [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.15, 'square', 0.03), i * 80));
         }
         function playLose() {
-            [400, 350, 300, 250].forEach((f, i) => setTimeout(() => playTone(f, 0.15, 'square', 0.06), i * 120));
+            [400, 350, 300, 250].forEach((f, i) => setTimeout(() => playTone(f, 0.15, 'square', 0.025), i * 120));
         }
 
         // ===== BACKGROUND MUSIC =====
         function initBackgroundMusic() {
             state.bgMusic = document.getElementById('bg-music');
-            state.bgMusic.volume = 0.4;
+            state.bgMusic.volume = 0.12;
         }
 
         function startBackgroundMusic() {
@@ -1949,7 +1964,7 @@
                         state.hasShield = false;
                         document.getElementById('shield-indicator').classList.add('hidden');
                         createParticles(px, py, '#AAAAFF', 10);
-                        playTone(300, 0.2, 'square', 0.06);
+                        playTone(300, 0.2, 'square', 0.025);
                         state.enemies.splice(i, 1);
                         return;
                     }
@@ -2006,7 +2021,7 @@
                         const hIdx = state.hazards.findIndex(h => h.x === nx && h.y === ny);
                         if (hIdx !== -1) state.hazards.splice(hIdx, 1);
                         createParticles(nx, ny, '#AAAAFF', 10);
-                        playTone(300, 0.15, 'square', 0.06);
+                        playTone(300, 0.15, 'square', 0.025);
                     } else {
                         const canvas = document.getElementById('game-canvas');
                         canvas.classList.add('shake');
@@ -2171,8 +2186,8 @@
                     state.exploredTiles[y][x] = true;
                 }
             }
-            playTone(1000, 0.1, 'sine', 0.08);
-            setTimeout(() => playTone(1200, 0.1, 'sine', 0.08), 50);
+            playTone(1000, 0.1, 'sine', 0.03);
+            setTimeout(() => playTone(1200, 0.1, 'sine', 0.03), 50);
             hapticFeedback('medium');
             updateUI();
             if (state.tutorialActive) checkTutorialProgress('reveal');
@@ -2310,8 +2325,8 @@
             state.tutorialPromptTimer = 0;
             hapticFeedback('light');
             // Brief ascending tone for step completion
-            playTone(800, 0.05, 'square', 0.05);
-            setTimeout(() => playTone(1000, 0.05, 'square', 0.05), 60);
+            playTone(800, 0.05, 'square', 0.02);
+            setTimeout(() => playTone(1000, 0.05, 'square', 0.02), 60);
 
             switch (state.tutorialStep) {
                 case 1:
@@ -2626,7 +2641,7 @@
                 playWin();
                 setTimeout(() => {
                     [1047, 1318, 1568].forEach((f, i) =>
-                        setTimeout(() => playTone(f, 0.2, 'square', 0.1), i * 100)
+                        setTimeout(() => playTone(f, 0.2, 'square', 0.04), i * 100)
                     );
                 }, 500);
                 hapticFeedback('success');
@@ -2740,11 +2755,11 @@
                 count--;
                 if (count > 0) {
                     countdownEl.querySelector('span').textContent = count;
-                    playTone(440, 0.1, 'sine', 0.1);
+                    playTone(440, 0.1, 'sine', 0.04);
                     hapticFeedback('light');
                 } else {
                     countdownEl.classList.add('hidden');
-                    playTone(880, 0.2, 'sine', 0.15);
+                    playTone(880, 0.2, 'sine', 0.05);
                     hapticFeedback('success');
                     state.gameStarted = true;
                     clearInterval(countInterval);
@@ -3047,7 +3062,7 @@
                         if (state.timeLeft <= 10 && state.timeLeft > 0 && state.timeLeft !== state.lastTimerTickSecond) {
                             state.lastTimerTickSecond = state.timeLeft;
                             const freq = 400 + (10 - state.timeLeft) * 40;
-                            playTone(freq, 0.05, 'square', 0.06);
+                            playTone(freq, 0.05, 'square', 0.025);
                             hapticFeedback('light');
                         }
 
@@ -3727,7 +3742,7 @@
             document.querySelectorAll('.diff-btn').forEach(btn => {
                 addTapHandler(btn, () => {
                     if (!state.audioCtx) initAudio();
-                    playTone(500, 0.05, 'square', 0.05);
+                    playTone(500, 0.05, 'square', 0.02);
                     state.difficulty = btn.dataset.diff;
                     document.querySelectorAll('.diff-btn').forEach(b => {
                         b.style.background = '#8bac0f';
@@ -3742,7 +3757,7 @@
             document.querySelectorAll('#characters button').forEach(btn => {
                 addTapHandler(btn, () => {
                     if (!state.audioCtx) initAudio();
-                    playTone(600, 0.05, 'square', 0.05);
+                    playTone(600, 0.05, 'square', 0.02);
                     const charKey = btn.dataset.char;
                     state.character = state.characterMap[charKey] || '@';
                     document.querySelectorAll('#characters button').forEach(b => {
