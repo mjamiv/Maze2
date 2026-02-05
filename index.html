@@ -1111,6 +1111,14 @@
                                 <p class="text-xs mb-1">BONUS: +<span id="level-bonus">0</span></p>
                                 <p class="text-xs" style="font-size: 6px;">NEXT: <span id="next-level-timer">3</span></p>
                             </div>
+
+                            <!-- Tutorial Skip Button -->
+                            <button id="tutorial-skip-btn" class="hidden absolute z-20"
+                                style="bottom: 4px; right: 4px; background: #306230; color: #9bbc0f;
+                                border: 2px solid #0f380f; font-family: 'Press Start 2P', monospace;
+                                font-size: 6px; padding: 3px 8px; cursor: pointer; animation: pulse 2s ease-in-out infinite; opacity: 0.85;">
+                                SKIP ►
+                            </button>
                         </div>
 
                         <div class="mt-1">
@@ -1489,7 +1497,13 @@
                 dark: '#306230',
                 light: '#8bac0f',
                 lightest: '#9bbc0f'
-            }
+            },
+
+            // Tutorial state
+            tutorialActive: false,
+            tutorialStep: 0,
+            tutorialMoveCount: 0,
+            tutorialPromptTimer: 0
         };
 
         // ===== DIFFICULTY CONFIG =====
@@ -2007,6 +2021,7 @@
                 state.player.animProgress = 0;
                 state.lastMoveTime = now;
                 playMove();
+                if (state.tutorialActive) checkTutorialProgress('move');
 
                 // Update fog of war
                 markExplored(nx, ny, 4);
@@ -2038,6 +2053,7 @@
                     state.stats.totalGems++;
                     if (state.combo > state.stats.bestCombo) state.stats.bestCombo = state.combo;
                     updateUI();
+                    if (state.tutorialActive) checkTutorialProgress('collect');
                 }
 
                 // Check powerups
@@ -2080,7 +2096,11 @@
 
                 // Check goal
                 if (nx === state.goal.x && ny === state.goal.y) {
-                    levelComplete();
+                    if (state.tutorialActive) {
+                        checkTutorialProgress('goal');
+                    } else {
+                        levelComplete();
+                    }
                 }
             }
         }
@@ -2113,6 +2133,7 @@
                     setTimeout(() => canvas.classList.remove('shake'), 300);
                     hapticFeedback('medium');
                     updateUI();
+                    if (state.tutorialActive) checkTutorialProgress('destroy');
                     return;
                 }
             }
@@ -2132,6 +2153,7 @@
                     setTimeout(() => canvas.classList.remove('shake'), 300);
                     hapticFeedback('medium');
                     updateUI();
+                    if (state.tutorialActive) checkTutorialProgress('destroy');
                     return;
                 }
             }
@@ -2153,6 +2175,7 @@
             setTimeout(() => playTone(1200, 0.1, 'sine', 0.08), 50);
             hapticFeedback('medium');
             updateUI();
+            if (state.tutorialActive) checkTutorialProgress('reveal');
         }
 
         // ===== LEVEL TRANSITION =====
@@ -2190,6 +2213,318 @@
                     }, 20);
                 }
             }, 20);
+        }
+
+        // ===== TUTORIAL SYSTEM =====
+        function isTutorialNeeded() {
+            return !localStorage.getItem('mazeTutorialComplete');
+        }
+
+        function getTutorialMaze() {
+            return [
+                [1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,0,1],
+                [1,0,1,1,1,0,1,0,1],
+                [1,0,0,0,0,0,1,0,1],
+                [1,0,1,0,1,1,1,0,1],
+                [1,0,1,0,0,0,0,0,1],
+                [1,0,1,1,1,0,1,0,1],
+                [1,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1]
+            ];
+        }
+
+        function startTutorial() {
+            state.tutorialActive = true;
+            state.tutorialStep = 0;
+            state.tutorialMoveCount = 0;
+            state.tutorialPromptTimer = 0;
+
+            state.gameStarted = true;
+            state.gameOver = false;
+            state.gamePaused = false;
+            state.score = 0;
+            state.level = 1;
+            state.combo = 0;
+            state.comboTimer = 0;
+            state.timeLeft = 999;
+            state.lastTimerTickSecond = -1;
+
+            state.mazeWidth = 9;
+            state.mazeHeight = 9;
+            state.goal = { x: 7, y: 7 };
+            state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
+            state.maze = getTutorialMaze();
+
+            state.hazards = [];
+            state.collectibles = [];
+            state.powerups = [];
+            state.enemies = [];
+            state.particles = [];
+            state.floatingTexts = [];
+            state.enemyMoveTimer = 0;
+
+            state.speedBoost = false;
+            state.speedBoostTimer = 0;
+            state.hasShield = false;
+            state.magnetActive = false;
+            state.magnetTimer = 0;
+            state.freezeActive = false;
+            state.freezeTimer = 0;
+
+            state.transitioning = false;
+            state.transitionPhase = 'none';
+
+            // Fog OFF for initial steps
+            state.fogEnabled = false;
+            state.exploredTiles = Array(9).fill(null).map(() => Array(9).fill(true));
+            state.revealPulseActive = false;
+            state.revealPulseTimer = 0;
+            state.revealUsesLeft = 0;
+
+            // Place gem for step 1/2
+            state.collectibles.push({ x: 4, y: 1, rotation: 0 });
+
+            startBackgroundMusic();
+            requestWakeLock();
+            hapticFeedback('medium');
+
+            state.tileSize = calculateTileSize();
+            state.canvas.width = state.mazeWidth * state.tileSize;
+            state.canvas.height = state.mazeHeight * state.tileSize;
+
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('speed-indicator').classList.add('hidden');
+            document.getElementById('shield-indicator').classList.add('hidden');
+            document.getElementById('magnet-indicator').classList.add('hidden');
+            document.getElementById('freeze-indicator').classList.add('hidden');
+            document.getElementById('tutorial-skip-btn').classList.remove('hidden');
+
+            updateTutorialUI();
+        }
+
+        function advanceTutorialStep() {
+            state.tutorialStep++;
+            state.tutorialPromptTimer = 0;
+            hapticFeedback('light');
+            // Brief ascending tone for step completion
+            playTone(800, 0.05, 'square', 0.05);
+            setTimeout(() => playTone(1000, 0.05, 'square', 0.05), 60);
+
+            switch (state.tutorialStep) {
+                case 1:
+                    // Gem should still be at (4,1); if already collected during movement, re-add
+                    if (state.collectibles.length === 0) {
+                        state.collectibles.push({ x: 4, y: 1, rotation: 0 });
+                    }
+                    break;
+
+                case 2: {
+                    // Place hazard adjacent to player's current position
+                    const px = state.player.targetX;
+                    const py = state.player.targetY;
+                    // Try right, then down, then left, then up
+                    const candidates = [
+                        { x: px + 1, y: py },
+                        { x: px, y: py + 1 },
+                        { x: px - 1, y: py },
+                        { x: px, y: py - 1 }
+                    ];
+                    for (const c of candidates) {
+                        if (c.x > 0 && c.x < 8 && c.y > 0 && c.y < 8 &&
+                            state.maze[c.y][c.x] === 0) {
+                            state.hazards.push({ x: c.x, y: c.y, pulse: 0 });
+                            break;
+                        }
+                    }
+                    break;
+                }
+
+                case 3:
+                    // Enable fog of war + give 1 reveal use
+                    state.fogEnabled = true;
+                    state.exploredTiles = Array(9).fill(null).map(() => Array(9).fill(false));
+                    markExplored(state.player.targetX, state.player.targetY, 4);
+                    state.revealUsesLeft = 1;
+                    updateTutorialUI();
+                    break;
+
+                case 4:
+                    // Goal already at (7,7), just let them find it
+                    break;
+
+                case 5:
+                    completeTutorial();
+                    return;
+            }
+        }
+
+        function checkTutorialProgress(event) {
+            if (!state.tutorialActive) return;
+
+            switch (state.tutorialStep) {
+                case 0:
+                    if (event === 'move') {
+                        state.tutorialMoveCount++;
+                        if (state.tutorialMoveCount >= 3) advanceTutorialStep();
+                    }
+                    break;
+                case 1:
+                    if (event === 'collect') advanceTutorialStep();
+                    break;
+                case 2:
+                    if (event === 'destroy') advanceTutorialStep();
+                    break;
+                case 3:
+                    if (event === 'reveal') advanceTutorialStep();
+                    break;
+                case 4:
+                    if (event === 'goal') advanceTutorialStep();
+                    break;
+            }
+        }
+
+        function completeTutorial() {
+            state.tutorialActive = false;
+            localStorage.setItem('mazeTutorialComplete', 'true');
+            document.getElementById('tutorial-skip-btn').classList.add('hidden');
+
+            playWin();
+            hapticFeedback('medium');
+
+            // Show "TRAINING COMPLETE!" using level-complete overlay
+            const overlay = document.getElementById('level-complete');
+            const h2 = overlay.querySelector('h2');
+            const origText = h2.textContent;
+            h2.textContent = 'TRAINING DONE!';
+            document.getElementById('level-bonus').textContent = '0';
+            overlay.classList.remove('hidden');
+
+            let countdown = 2;
+            const timerEl = document.getElementById('next-level-timer');
+            timerEl.textContent = countdown;
+            const interval = setInterval(() => {
+                countdown--;
+                timerEl.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    h2.textContent = origText;
+                    overlay.classList.add('hidden');
+
+                    startLevelTransition(() => {
+                        setupLevel1AfterTutorial();
+                    });
+                }
+            }, 1000);
+        }
+
+        function skipTutorial() {
+            state.tutorialActive = false;
+            state.gameStarted = false;
+            localStorage.setItem('mazeTutorialComplete', 'true');
+            document.getElementById('tutorial-skip-btn').classList.add('hidden');
+            startGame();
+        }
+
+        function setupLevel1AfterTutorial() {
+            const diff = DIFFICULTY[state.difficulty];
+
+            state.level = 1;
+            state.score = 0;
+            state.combo = 0;
+            state.comboTimer = 0;
+            state.timeLeft = diff.time;
+            state.lastTimerTickSecond = -1;
+
+            const size = getMazeSize(1);
+            state.mazeWidth = size.w;
+            state.mazeHeight = size.h;
+            state.goal = { x: size.w - 2, y: size.h - 2 };
+            state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
+
+            state.speedBoost = false;
+            state.speedBoostTimer = 0;
+            state.hasShield = false;
+            state.magnetActive = false;
+            state.magnetTimer = 0;
+            state.freezeActive = false;
+            state.freezeTimer = 0;
+            state.particles = [];
+            state.floatingTexts = [];
+            state.enemies = [];
+            state.enemyMoveTimer = 0;
+            state.transitioning = false;
+            state.transitionPhase = 'none';
+
+            state.fogEnabled = true;
+            state.exploredTiles = Array(state.mazeHeight).fill(null).map(() => Array(state.mazeWidth).fill(false));
+            state.revealPulseActive = false;
+            state.revealPulseTimer = 0;
+            state.revealUsesLeft = diff.revealUses;
+
+            state.stats.totalGames++;
+            saveStats();
+
+            state.tileSize = calculateTileSize();
+            state.canvas.width = state.mazeWidth * state.tileSize;
+            state.canvas.height = state.mazeHeight * state.tileSize;
+
+            generateMaze();
+            markExplored(1, 1, 4);
+
+            document.getElementById('speed-indicator').classList.add('hidden');
+            document.getElementById('shield-indicator').classList.add('hidden');
+            document.getElementById('magnet-indicator').classList.add('hidden');
+            document.getElementById('freeze-indicator').classList.add('hidden');
+
+            updateUI();
+            state.gameStarted = true;
+        }
+
+        function drawTutorialPrompt() {
+            const { ctx, canvas, tileSize, gbColors, isMobile } = state;
+
+            const prompts = isMobile
+                ? ['SWIPE D-PAD TO MOVE', 'WALK OVER GEMS *', 'PRESS B: ATTACK!', 'PRESS A: REVEAL MAP!', 'REACH THE FLAG!']
+                : ['ARROWS/WASD: MOVE', 'WALK OVER GEMS *', 'SPACE: ATTACK!', 'E KEY: REVEAL MAP!', 'REACH THE FLAG!'];
+
+            const text = prompts[state.tutorialStep] || '';
+
+            state.tutorialPromptTimer += 0.03;
+            const alpha = 0.7 + 0.3 * Math.abs(Math.sin(state.tutorialPromptTimer * 2));
+
+            const boxH = Math.max(tileSize * 1.4, 18);
+            const boxY = 2;
+            const boxX = 4;
+            const boxW = canvas.width - 8;
+
+            ctx.globalAlpha = 0.92;
+            ctx.fillStyle = gbColors.darkest;
+            ctx.fillRect(boxX, boxY, boxW, boxH);
+            ctx.strokeStyle = gbColors.lightest;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = gbColors.lightest;
+            const fontSize = Math.max(7, Math.min(tileSize * 0.32, 11));
+            ctx.font = `bold ${fontSize}px 'Press Start 2P', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, boxY + boxH / 2);
+
+            ctx.globalAlpha = 1;
+        }
+
+        function updateTutorialUI() {
+            document.getElementById('score').textContent = 'SC:0000';
+            document.getElementById('level').textContent = 'TUTO';
+            document.getElementById('timer').textContent = '';
+            document.getElementById('timer').classList.remove('blink');
+            document.getElementById('reveal-uses').textContent = state.revealUsesLeft > 0 ? `A:${state.revealUsesLeft}` : '';
+            document.getElementById('combo').classList.add('hidden');
         }
 
         // ===== GAME FLOW =====
@@ -2418,6 +2753,7 @@
         }
 
         function updateUI() {
+            if (state.tutorialActive) { updateTutorialUI(); return; }
             // Format score with leading zeros (GB style)
             const scoreStr = String(state.score).padStart(4, '0');
             document.getElementById('score').textContent = `SC:${scoreStr}`;
@@ -2682,6 +3018,9 @@
                     }
                 }
             }
+
+            // Tutorial prompt overlay
+            if (state.tutorialActive) drawTutorialPrompt();
         }
 
         // ===== GAME LOOP =====
@@ -2693,28 +3032,29 @@
             lastTime = timestamp;
             
             if (state.gameStarted && !state.gamePaused && !state.gameOver) {
-                // Timer
+                // Timer (skip during tutorial)
                 timerAccum += delta;
                 if (timerAccum >= 1000) {
                     timerAccum -= 1000;
-                    if (!state.freezeActive) {
-                        state.timeLeft--;
-                    }
-                    // Track total time played
-                    state.stats.totalTimePlayed++;
-                    updateUI();
+                    if (!state.tutorialActive) {
+                        if (!state.freezeActive) {
+                            state.timeLeft--;
+                        }
+                        state.stats.totalTimePlayed++;
+                        updateUI();
 
-                    // Timer warning sound
-                    if (state.timeLeft <= 10 && state.timeLeft > 0 && state.timeLeft !== state.lastTimerTickSecond) {
-                        state.lastTimerTickSecond = state.timeLeft;
-                        const freq = 400 + (10 - state.timeLeft) * 40;
-                        playTone(freq, 0.05, 'square', 0.06);
-                        hapticFeedback('light');
-                    }
+                        // Timer warning sound
+                        if (state.timeLeft <= 10 && state.timeLeft > 0 && state.timeLeft !== state.lastTimerTickSecond) {
+                            state.lastTimerTickSecond = state.timeLeft;
+                            const freq = 400 + (10 - state.timeLeft) * 40;
+                            playTone(freq, 0.05, 'square', 0.06);
+                            hapticFeedback('light');
+                        }
 
-                    if (state.timeLeft <= 0) {
-                        saveStats();
-                        gameOverScreen(false);
+                        if (state.timeLeft <= 0) {
+                            saveStats();
+                            gameOverScreen(false);
+                        }
                     }
                 }
 
@@ -2790,7 +3130,7 @@
                 }
 
                 // Update systems
-                updateEnemies(delta);
+                if (!state.tutorialActive) updateEnemies(delta);
                 updateParticles();
                 // Update floating text
                 state.floatingTexts = state.floatingTexts.filter(ft => {
@@ -3413,7 +3753,16 @@
             });
 
             // Play button
-            addTapHandler(document.getElementById('play-btn'), startGame);
+            addTapHandler(document.getElementById('play-btn'), () => {
+                if (isTutorialNeeded()) {
+                    startTutorial();
+                } else {
+                    startGame();
+                }
+            });
+
+            // Tutorial skip button
+            addTapHandler(document.getElementById('tutorial-skip-btn'), skipTutorial);
 
             // Game over buttons
             addTapHandler(document.getElementById('play-again-btn'), startGame);
