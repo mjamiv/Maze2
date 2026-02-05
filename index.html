@@ -1058,16 +1058,19 @@
                             <div class="desktop-only text-xs space-y-1" style="font-size: 6px; line-height: 1.4;">
                                 <div>ARROWS/WASD = MOVE</div>
                                 <div>SPACE = ATTACK</div>
+                                <div>E = REVEAL MAP</div>
                                 <div>P/ESC = PAUSE</div>
                             </div>
                             <!-- Mobile controls -->
                             <div class="mobile-only text-xs space-y-1" style="font-size: 6px; line-height: 1.4;">
                                 <div>D-PAD = MOVE</div>
                                 <div>B BTN = ATTACK</div>
+                                <div>A BTN = REVEAL</div>
                                 <div>SELECT = PAUSE</div>
                             </div>
                             <div class="mt-2 pt-2 border-t-2 border-[#0f380f]" style="font-size: 6px;">
-                                <p>F=GOAL *=GEM !=PWR X=HAZARD</p>
+                                <p>F=GOAL *=GEM X=HAZARD M=ENEMY</p>
+                                <p>!=SPD +=TIME S=SHLD ?=MAP</p>
                             </div>
                         </div>
 
@@ -1091,17 +1094,30 @@
                             </button>
                         </div>
 
+                        <h3 class="text-xs mb-2">DIFFICULTY</h3>
+                        <div id="difficulty-select" class="flex gap-2 mb-3">
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #8bac0f;" data-diff="easy">EASY</button>
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #306230; color: #9bbc0f;" data-diff="medium">MEDIUM</button>
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #8bac0f;" data-diff="hard">HARD</button>
+                        </div>
+
                         <button id="play-btn" class="px-6 py-2 text-xs mb-3">► PLAY</button>
 
                         <p class="text-xs mb-2" style="font-size: 6px;">HIGH SCORE: <span id="high-score">0</span></p>
 
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 flex-wrap justify-center">
                             <button id="music-toggle" class="px-3 py-1" style="font-size: 6px;">
                                 <span id="music-icon">♪</span>
                                 <span id="music-text">ON</span>
                             </button>
+                            <button id="sfx-toggle" class="px-3 py-1" style="font-size: 6px;">
+                                SFX <span id="sfx-text">ON</span>
+                            </button>
                             <button id="leaderboard-btn" class="px-3 py-1" style="font-size: 6px;">
                                 SCORES
+                            </button>
+                            <button id="stats-btn" class="px-3 py-1" style="font-size: 6px;">
+                                STATS
                             </button>
                         </div>
                     </div>
@@ -1115,6 +1131,7 @@
                                 <span id="combo" class="hidden blink">x2!</span>
                             </div>
                             <div class="flex gap-2">
+                                <span id="reveal-uses" style="font-size: 6px;">A:1</span>
                                 <span id="level">LV:01</span>
                                 <span id="timer">T:60</span>
                             </div>
@@ -1137,8 +1154,11 @@
                         </div>
 
                         <div class="mt-1">
-                            <div id="powerup-display">
+                            <div id="powerup-display" class="flex gap-2 justify-center">
                                 <span id="speed-indicator" class="hidden text-xs blink" style="font-size: 6px;">!SPEED!</span>
+                                <span id="shield-indicator" class="hidden text-xs blink" style="font-size: 6px;">SHIELD</span>
+                                <span id="magnet-indicator" class="hidden text-xs blink" style="font-size: 6px;">MAGNET</span>
+                                <span id="freeze-indicator" class="hidden text-xs blink" style="font-size: 6px;">FREEZE</span>
                             </div>
                         </div>
                     </div>
@@ -1170,6 +1190,14 @@
                             <!-- Leaderboard entries will be inserted here -->
                         </div>
                         <button id="close-leaderboard-btn" class="px-6 py-2 text-xs">BACK</button>
+                    </div>
+
+                    <!-- Stats Overlay -->
+                    <div id="stats-overlay" class="hidden absolute inset-0 flex flex-col items-center z-20 p-3" style="background: #9bbc0f;">
+                        <h2 class="text-xs mb-3">STATISTICS</h2>
+                        <div id="stats-list" class="w-full flex-1 overflow-y-auto mb-3 border-3 border-[#0f380f] p-2" style="background: #8bac0f; max-height: 200px;">
+                        </div>
+                        <button id="close-stats-btn" class="px-6 py-2 text-xs">BACK</button>
                     </div>
 
                 </div>
@@ -1268,6 +1296,11 @@
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 setTimeout(setAppHeight, 100);
+            } else {
+                // Auto-pause when tab/app is hidden
+                if (typeof state !== 'undefined' && state.gameStarted && !state.gamePaused && !state.gameOver) {
+                    togglePause();
+                }
             }
         });
 
@@ -1437,7 +1470,7 @@
             moveDelay: 120,
 
             highScore: parseInt(localStorage.getItem('mazeHighScore') || '0'),
-            soundEnabled: true,
+            sfxEnabled: true,
             audioCtx: null,
 
             bgMusic: null,
@@ -1451,6 +1484,49 @@
             playerName: '',
             leaderboard: [],
 
+            // Difficulty
+            difficulty: 'medium',
+
+            // Enemies (patrol AI)
+            enemies: [],
+            enemyMoveTimer: 0,
+
+            // Fog of war
+            fogEnabled: true,
+            exploredTiles: [],
+            revealPulseActive: false,
+            revealPulseTimer: 0,
+            revealUsesLeft: 1,
+
+            // Floating text
+            floatingTexts: [],
+
+            // Level transitions
+            transitioning: false,
+            transitionTiles: [],
+            transitionPhase: 'none',
+            transitionTimer: 0,
+
+            // Extra powerup state
+            hasShield: false,
+            magnetActive: false,
+            magnetTimer: 0,
+            freezeActive: false,
+            freezeTimer: 0,
+
+            // Timer warning
+            lastTimerTickSecond: -1,
+
+            // Persistent stats
+            stats: {
+                totalGames: 0,
+                totalGems: 0,
+                totalHazardsDestroyed: 0,
+                bestCombo: 0,
+                fastestLevelClear: Infinity,
+                totalTimePlayed: 0
+            },
+
             // Game Boy color palette
             gbColors: {
                 darkest: '#0f380f',
@@ -1459,6 +1535,19 @@
                 lightest: '#9bbc0f'
             }
         };
+
+        // ===== DIFFICULTY CONFIG =====
+        const DIFFICULTY = {
+            easy:   { time: 90, extraPaths: 10, hazardBase: 2, hazardMax: 5, enemyInterval: 800, enemyBase: 0, revealUses: 2 },
+            medium: { time: 60, extraPaths: 5,  hazardBase: 3, hazardMax: 7, enemyInterval: 500, enemyBase: 1, revealUses: 1 },
+            hard:   { time: 45, extraPaths: 2,  hazardBase: 4, hazardMax: 9, enemyInterval: 350, enemyBase: 2, revealUses: 0 }
+        };
+
+        function getMazeSize(level) {
+            if (level <= 3) return { w: 15, h: 15 };
+            if (level <= 6) return { w: 19, h: 19 };
+            return { w: 25, h: 25 };
+        }
 
         // ===== LEADERBOARD =====
         function loadLeaderboard() {
@@ -1525,13 +1614,50 @@
             document.getElementById('leaderboard-overlay').classList.add('hidden');
         }
 
+        // ===== STATS =====
+        function loadStats() {
+            try {
+                const data = localStorage.getItem('mazeStats');
+                if (data) Object.assign(state.stats, JSON.parse(data));
+            } catch(e) {}
+        }
+
+        function saveStats() {
+            try { localStorage.setItem('mazeStats', JSON.stringify(state.stats)); } catch(e) {}
+        }
+
+        function renderStats() {
+            const s = state.stats;
+            const fastest = s.fastestLevelClear === Infinity ? '--' : s.fastestLevelClear + 's';
+            const list = document.getElementById('stats-list');
+            list.innerHTML = `
+                <div class="space-y-2" style="font-size: 6px; color: #0f380f; font-family: 'Press Start 2P', monospace;">
+                    <div class="flex justify-between"><span>GAMES PLAYED</span><span>${s.totalGames}</span></div>
+                    <div class="flex justify-between"><span>GEMS COLLECTED</span><span>${s.totalGems}</span></div>
+                    <div class="flex justify-between"><span>FOES DESTROYED</span><span>${s.totalHazardsDestroyed}</span></div>
+                    <div class="flex justify-between"><span>BEST COMBO</span><span>x${s.bestCombo}</span></div>
+                    <div class="flex justify-between"><span>FASTEST LEVEL</span><span>${fastest}</span></div>
+                    <div class="flex justify-between"><span>TIME PLAYED</span><span>${Math.floor(s.totalTimePlayed / 60)}m${s.totalTimePlayed % 60}s</span></div>
+                </div>
+            `;
+        }
+
+        function showStats() {
+            renderStats();
+            document.getElementById('stats-overlay').classList.remove('hidden');
+        }
+
+        function hideStats() {
+            document.getElementById('stats-overlay').classList.add('hidden');
+        }
+
         // ===== AUDIO =====
         function initAudio() {
             state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
         function playTone(freq, duration, type = 'sine', volume = 0.1) {
-            if (!state.soundEnabled || !state.audioCtx) return;
+            if (!state.sfxEnabled || !state.audioCtx) return;
             try {
                 const osc = state.audioCtx.createOscillator();
                 const gain = state.audioCtx.createGain();
@@ -1583,6 +1709,7 @@
 
         function toggleBackgroundMusic() {
             state.musicEnabled = !state.musicEnabled;
+            localStorage.setItem('mazeMusicEnabled', state.musicEnabled.toString());
             const icon = document.getElementById('music-icon');
             const text = document.getElementById('music-text');
 
@@ -1599,6 +1726,12 @@
                 text.textContent = 'OFF';
                 state.bgMusic.pause();
             }
+        }
+
+        function toggleSFX() {
+            state.sfxEnabled = !state.sfxEnabled;
+            localStorage.setItem('mazeSfxEnabled', state.sfxEnabled.toString());
+            document.getElementById('sfx-text').textContent = state.sfxEnabled ? 'ON' : 'OFF';
         }
 
         function pauseBackgroundMusic() {
@@ -1647,7 +1780,8 @@
             state.maze[state.goal.y][state.goal.x] = 0;
             
             // Add some extra paths for easier navigation
-            const extraPaths = 5; // Standard difficulty
+            const diff = DIFFICULTY[state.difficulty];
+            const extraPaths = diff.extraPaths;
             for (let i = 0; i < extraPaths; i++) {
                 const x = Math.floor(Math.random() * (mazeWidth - 4)) + 2;
                 const y = Math.floor(Math.random() * (mazeHeight - 4)) + 2;
@@ -1657,7 +1791,7 @@
             }
             
             // Generate hazards
-            const hazardCount = Math.min(3 + level, 7); // Standard difficulty
+            const hazardCount = Math.min(diff.hazardBase + level, diff.hazardMax);
             state.hazards = [];
             for (let i = 0; i < hazardCount; i++) {
                 let attempts = 0;
@@ -1695,26 +1829,55 @@
                 }
             }
             
-            // Generate powerups
+            // Generate powerups (expanded variety)
+            const powerupTypes = ['speed', 'time', 'shield', 'reveal', 'magnet', 'freeze'];
+            const powerupCount = 1 + Math.floor(Math.random() * 2);
             state.powerups = [];
-            if (Math.random() < 0.6) {
+            for (let i = 0; i < powerupCount; i++) {
                 let attempts = 0;
                 while (attempts < 50) {
                     const px = Math.floor(Math.random() * (mazeWidth - 2)) + 1;
                     const py = Math.floor(Math.random() * (mazeHeight - 2)) + 1;
-                    if (state.maze[py][px] === 0 && 
-                        !(px === 1 && py === 1) && 
+                    if (state.maze[py][px] === 0 &&
+                        !(px === 1 && py === 1) &&
                         !(px === state.goal.x && py === state.goal.y) &&
                         !state.hazards.some(h => h.x === px && h.y === py) &&
-                        !state.collectibles.some(c => c.x === px && c.y === py)) {
-                        const type = Math.random() < 0.5 ? 'speed' : 'time';
+                        !state.collectibles.some(c => c.x === px && c.y === py) &&
+                        !state.powerups.some(p => p.x === px && p.y === py)) {
+                        const type = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
                         state.powerups.push({ x: px, y: py, type, pulse: 0 });
                         break;
                     }
                     attempts++;
                 }
             }
-            
+
+            // Generate enemies (back-and-forth patrol)
+            const enemyCount = Math.min(diff.enemyBase + Math.floor(level / 2), 5);
+            state.enemies = [];
+            for (let i = 0; i < enemyCount; i++) {
+                let attempts = 0;
+                while (attempts < 100) {
+                    const ex = Math.floor(Math.random() * (mazeWidth - 2)) + 1;
+                    const ey = Math.floor(Math.random() * (mazeHeight - 2)) + 1;
+                    const distFromStart = Math.abs(ex - 1) + Math.abs(ey - 1);
+                    if (state.maze[ey][ex] === 0 && distFromStart > 4 &&
+                        !(ex === state.goal.x && ey === state.goal.y) &&
+                        !state.hazards.some(h => h.x === ex && h.y === ey) &&
+                        !state.enemies.some(e => e.x === ex && e.y === ey)) {
+                        // Determine patrol direction: try horizontal first, then vertical
+                        let dx = 1, dy = 0;
+                        if (ex + 1 < mazeWidth && state.maze[ey][ex + 1] === 1 &&
+                            ex - 1 >= 0 && state.maze[ey][ex - 1] === 1) {
+                            dx = 0; dy = 1; // vertical patrol
+                        }
+                        state.enemies.push({ x: ex, y: ey, dx, dy });
+                        break;
+                    }
+                    attempts++;
+                }
+            }
+
             // Verify maze is solvable
             if (!isSolvable()) {
                 generateMaze();
@@ -1735,8 +1898,7 @@
                     const nx = x + dx;
                     const ny = y + dy;
                     if (nx >= 0 && nx < state.mazeWidth && ny >= 0 && ny < state.mazeHeight &&
-                        !visited[ny][nx] && state.maze[ny][nx] === 0 &&
-                        !state.hazards.some(h => h.x === nx && h.y === ny)) {
+                        !visited[ny][nx] && state.maze[ny][nx] === 0) {
                         visited[ny][nx] = true;
                         queue.push({ x: nx, y: ny });
                     }
@@ -1773,8 +1935,86 @@
             });
         }
 
+        // ===== FOG OF WAR =====
+        function markExplored(cx, cy, radius) {
+            for (let y = 0; y < state.mazeHeight; y++) {
+                for (let x = 0; x < state.mazeWidth; x++) {
+                    if (Math.abs(x - cx) + Math.abs(y - cy) <= radius) {
+                        state.exploredTiles[y][x] = true;
+                    }
+                }
+            }
+        }
+
+        // ===== ENEMIES =====
+        function updateEnemies(delta) {
+            const diff = DIFFICULTY[state.difficulty];
+            state.enemyMoveTimer += delta;
+            if (state.enemyMoveTimer < diff.enemyInterval) return;
+            state.enemyMoveTimer -= diff.enemyInterval;
+
+            for (const enemy of state.enemies) {
+                const nx = enemy.x + enemy.dx;
+                const ny = enemy.y + enemy.dy;
+                if (nx <= 0 || nx >= state.mazeWidth - 1 || ny <= 0 || ny >= state.mazeHeight - 1 ||
+                    state.maze[ny][nx] === 1) {
+                    enemy.dx = -enemy.dx;
+                    enemy.dy = -enemy.dy;
+                } else {
+                    enemy.x = nx;
+                    enemy.y = ny;
+                }
+            }
+
+            checkEnemyCollision();
+        }
+
+        function checkEnemyCollision() {
+            const px = state.player.targetX;
+            const py = state.player.targetY;
+            for (let i = state.enemies.length - 1; i >= 0; i--) {
+                const enemy = state.enemies[i];
+                if (enemy.x === px && enemy.y === py) {
+                    if (state.hasShield) {
+                        state.hasShield = false;
+                        document.getElementById('shield-indicator').classList.add('hidden');
+                        createParticles(px, py, '#AAAAFF', 10);
+                        playTone(300, 0.2, 'square', 0.06);
+                        state.enemies.splice(i, 1);
+                        return;
+                    }
+                    // Penalty: lose 10 seconds, respawn at start
+                    state.timeLeft = Math.max(0, state.timeLeft - 10);
+                    hapticFeedback('error');
+                    createParticles(px, py, '#FF0000', 12);
+                    if (state.timeLeft <= 0) {
+                        gameOverScreen(false);
+                    } else {
+                        const canvas = document.getElementById('game-canvas');
+                        canvas.classList.add('shake');
+                        setTimeout(() => canvas.classList.remove('shake'), 300);
+                        state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
+                        updateUI();
+                    }
+                    return;
+                }
+            }
+        }
+
+        // ===== FLOATING TEXT =====
+        function createFloatingText(tileX, tileY, text) {
+            state.floatingTexts.push({
+                x: tileX * state.tileSize + state.tileSize / 2,
+                y: tileY * state.tileSize,
+                text: text,
+                life: 1.0,
+                vy: -1.5
+            });
+        }
+
         // ===== MOVEMENT =====
         function movePlayer(dx, dy) {
+            if (state.transitioning) return;
             if (state.gamePaused || state.gameOver || !state.gameStarted) return;
             if (state.player.animProgress < 1) return;
             
@@ -1787,24 +2027,42 @@
             
             if (nx >= 0 && nx < state.mazeWidth && ny >= 0 && ny < state.mazeHeight && state.maze[ny][nx] === 0) {
                 // Check hazard
-                if (state.hazards.some(h => h.x === nx && h.y === ny)) {
-                    const canvas = document.getElementById('game-canvas');
-                    canvas.classList.add('shake');
-                    setTimeout(() => canvas.classList.remove('shake'), 300);
-                    return;
+                const hazardHit = state.hazards.some(h => h.x === nx && h.y === ny);
+                if (hazardHit) {
+                    if (state.hasShield) {
+                        // Shield absorbs the hit
+                        state.hasShield = false;
+                        document.getElementById('shield-indicator').classList.add('hidden');
+                        const hIdx = state.hazards.findIndex(h => h.x === nx && h.y === ny);
+                        if (hIdx !== -1) state.hazards.splice(hIdx, 1);
+                        createParticles(nx, ny, '#AAAAFF', 10);
+                        playTone(300, 0.15, 'square', 0.06);
+                    } else {
+                        const canvas = document.getElementById('game-canvas');
+                        canvas.classList.add('shake');
+                        setTimeout(() => canvas.classList.remove('shake'), 300);
+                        hapticFeedback('error');
+                        return;
+                    }
                 }
-                
+
                 state.player.targetX = nx;
                 state.player.targetY = ny;
                 state.player.animProgress = 0;
                 state.lastMoveTime = now;
                 playMove();
-                
+
+                // Update fog of war
+                markExplored(nx, ny, 4);
+
+                // Check enemy collision after move
+                checkEnemyCollision();
+
                 // Check collectibles
                 const collectIdx = state.collectibles.findIndex(c => c.x === nx && c.y === ny);
                 if (collectIdx !== -1) {
                     state.collectibles.splice(collectIdx, 1);
-                    
+
                     // Combo system
                     if (now - state.lastCollectTime < 2000) {
                         state.combo = Math.min(state.combo + 1, 5);
@@ -1813,33 +2071,57 @@
                     }
                     state.lastCollectTime = now;
                     state.comboTimer = 60;
-                    
+
                     const points = 10 * state.combo;
                     state.score += points;
                     createParticles(nx, ny, '#FFD700', 12);
+                    createFloatingText(nx, ny, `+${points}${state.combo > 1 ? ' x' + state.combo : ''}`);
                     playCollect();
+
+                    // Stats tracking
+                    state.stats.totalGems++;
+                    if (state.combo > state.stats.bestCombo) state.stats.bestCombo = state.combo;
                     updateUI();
                 }
-                
+
                 // Check powerups
                 const powerIdx = state.powerups.findIndex(p => p.x === nx && p.y === ny);
                 if (powerIdx !== -1) {
                     const power = state.powerups[powerIdx];
                     state.powerups.splice(powerIdx, 1);
-                    
+
                     if (power.type === 'speed') {
                         state.speedBoost = true;
-                        state.speedBoostTimer = 300; // 5 seconds
+                        state.speedBoostTimer = 300;
                         document.getElementById('speed-indicator').classList.remove('hidden');
                     } else if (power.type === 'time') {
                         state.timeLeft += 10;
+                    } else if (power.type === 'shield') {
+                        state.hasShield = true;
+                        document.getElementById('shield-indicator').classList.remove('hidden');
+                    } else if (power.type === 'reveal') {
+                        state.revealPulseActive = true;
+                        state.revealPulseTimer = 120;
+                        for (let ry = 0; ry < state.mazeHeight; ry++) {
+                            for (let rx = 0; rx < state.mazeWidth; rx++) {
+                                state.exploredTiles[ry][rx] = true;
+                            }
+                        }
+                    } else if (power.type === 'magnet') {
+                        state.magnetActive = true;
+                        state.magnetTimer = 300;
+                        document.getElementById('magnet-indicator').classList.remove('hidden');
+                    } else if (power.type === 'freeze') {
+                        state.freezeActive = true;
+                        state.freezeTimer = 300;
+                        document.getElementById('freeze-indicator').classList.remove('hidden');
                     }
-                    
-                    createParticles(nx, ny, power.type === 'speed' ? '#FFD700' : '#00FFFF', 15);
+
+                    createParticles(nx, ny, '#FFD700', 15);
                     playPowerup();
                     updateUI();
                 }
-                
+
                 // Check goal
                 if (nx === state.goal.x && ny === state.goal.y) {
                     levelComplete();
@@ -1849,7 +2131,7 @@
 
         function destroyHazard() {
             if (state.gamePaused || state.gameOver || !state.gameStarted) return;
-            
+
             const { targetX, targetY } = state.player;
             const adjacent = [
                 { x: targetX, y: targetY },
@@ -1858,30 +2140,120 @@
                 { x: targetX, y: targetY + 1 },
                 { x: targetX, y: targetY - 1 }
             ];
-            
+
+            // Destroy hazard
             for (const pos of adjacent) {
                 const idx = state.hazards.findIndex(h => h.x === pos.x && h.y === pos.y);
                 if (idx !== -1) {
                     const hazard = state.hazards[idx];
                     state.hazards.splice(idx, 1);
                     state.score += 5;
+                    state.stats.totalHazardsDestroyed++;
                     createParticles(hazard.x, hazard.y, '#FF4444', 15);
                     playDestroy();
+                    // Screen shake on destroy
+                    const canvas = document.getElementById('game-canvas');
+                    canvas.classList.add('shake');
+                    setTimeout(() => canvas.classList.remove('shake'), 300);
+                    hapticFeedback('medium');
+                    updateUI();
+                    return;
+                }
+            }
+
+            // Destroy enemy
+            for (const pos of adjacent) {
+                const idx = state.enemies.findIndex(e => e.x === pos.x && e.y === pos.y);
+                if (idx !== -1) {
+                    const enemy = state.enemies[idx];
+                    state.enemies.splice(idx, 1);
+                    state.score += 5;
+                    state.stats.totalHazardsDestroyed++;
+                    createParticles(enemy.x, enemy.y, '#FF4444', 15);
+                    playDestroy();
+                    const canvas = document.getElementById('game-canvas');
+                    canvas.classList.add('shake');
+                    setTimeout(() => canvas.classList.remove('shake'), 300);
+                    hapticFeedback('medium');
                     updateUI();
                     return;
                 }
             }
         }
 
+        // ===== REVEAL PULSE =====
+        function activateRevealPulse() {
+            if (!state.gameStarted || state.gamePaused || state.gameOver) return;
+            if (state.revealUsesLeft <= 0 || state.revealPulseActive) return;
+            state.revealUsesLeft--;
+            state.revealPulseActive = true;
+            state.revealPulseTimer = 120;
+            for (let y = 0; y < state.mazeHeight; y++) {
+                for (let x = 0; x < state.mazeWidth; x++) {
+                    state.exploredTiles[y][x] = true;
+                }
+            }
+            playTone(1000, 0.1, 'sine', 0.08);
+            setTimeout(() => playTone(1200, 0.1, 'sine', 0.08), 50);
+            hapticFeedback('medium');
+            updateUI();
+        }
+
+        // ===== LEVEL TRANSITION =====
+        function startLevelTransition(callback) {
+            state.transitioning = true;
+            state.transitionPhase = 'dissolve';
+
+            const tiles = [];
+            for (let y = 0; y < state.mazeHeight; y++) {
+                for (let x = 0; x < state.mazeWidth; x++) {
+                    tiles.push({ x, y });
+                }
+            }
+            for (let i = tiles.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+            }
+            state.transitionTiles = tiles;
+            state.transitionTimer = 0;
+
+            const dissolveInterval = setInterval(() => {
+                state.transitionTimer += 20;
+                if (state.transitionTimer >= 500) {
+                    clearInterval(dissolveInterval);
+                    callback();
+                    state.transitionPhase = 'build';
+                    state.transitionTimer = 0;
+                    const buildInterval = setInterval(() => {
+                        state.transitionTimer += 20;
+                        if (state.transitionTimer >= 500) {
+                            clearInterval(buildInterval);
+                            state.transitioning = false;
+                            state.transitionPhase = 'none';
+                        }
+                    }, 20);
+                }
+            }, 20);
+        }
+
         // ===== GAME FLOW =====
         function levelComplete() {
+            const diff = DIFFICULTY[state.difficulty];
             const timeBonus = state.timeLeft * 2;
             state.score += timeBonus;
-            
+
+            // Track fastest level clear
+            const timeUsed = diff.time - state.timeLeft;
+            if (timeUsed < state.stats.fastestLevelClear) {
+                state.stats.fastestLevelClear = timeUsed;
+            }
+            saveStats();
+
             document.getElementById('level-bonus').textContent = timeBonus;
             document.getElementById('level-complete').classList.remove('hidden');
             playWin();
-            
+            hapticFeedback('success');
+
             let countdown = 3;
             const timerEl = document.getElementById('next-level-timer');
             const interval = setInterval(() => {
@@ -1889,22 +2261,60 @@
                 timerEl.textContent = countdown;
                 if (countdown <= 0) {
                     clearInterval(interval);
-                    document.getElementById('level-complete').classList.remove('hidden');
-                    nextLevel();
+                    document.getElementById('level-complete').classList.add('hidden');
+                    startLevelTransition(() => {
+                        nextLevel();
+                    });
                 }
             }, 1000);
         }
 
         function nextLevel() {
+            const diff = DIFFICULTY[state.difficulty];
             state.level++;
+
+            // Update maze size based on level
+            const size = getMazeSize(state.level);
+            state.mazeWidth = size.w;
+            state.mazeHeight = size.h;
+            state.goal = { x: size.w - 2, y: size.h - 2 };
+
             state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
-            state.timeLeft = Math.max(30, 60 - state.level * 2); // Less time each level
+            state.timeLeft = Math.max(30, diff.time - state.level * 2);
+            state.lastTimerTickSecond = -1;
             state.speedBoost = false;
             state.speedBoostTimer = 0;
-            document.getElementById('speed-indicator').classList.add('hidden');
-            
+            state.hasShield = false;
+            state.magnetActive = false;
+            state.magnetTimer = 0;
+            state.freezeActive = false;
+            state.freezeTimer = 0;
+            state.enemies = [];
+            state.enemyMoveTimer = 0;
+            state.particles = [];
+            state.floatingTexts = [];
+            state.transitioning = false;
+            state.transitionPhase = 'none';
+
+            // Fog of war reset
+            state.exploredTiles = Array(state.mazeHeight).fill().map(() => Array(state.mazeWidth).fill(false));
+            state.revealPulseActive = false;
+            state.revealPulseTimer = 0;
+            state.revealUsesLeft = diff.revealUses;
+
+            // Resize canvas
+            state.tileSize = calculateTileSize();
+            state.canvas.width = state.mazeWidth * state.tileSize;
+            state.canvas.height = state.mazeHeight * state.tileSize;
+
             generateMaze();
+            markExplored(1, 1, 4);
+
             document.getElementById('level-complete').classList.add('hidden');
+            document.getElementById('speed-indicator').classList.add('hidden');
+            document.getElementById('shield-indicator').classList.add('hidden');
+            document.getElementById('magnet-indicator').classList.add('hidden');
+            document.getElementById('freeze-indicator').classList.add('hidden');
             updateUI();
         }
 
@@ -1915,12 +2325,30 @@
             // Release wake lock when game ends
             releaseWakeLock();
 
-            if (!won) {
+            const overlay = document.getElementById('game-over');
+
+            if (won) {
+                // Victory - bright screen, triumphant fanfare
+                overlay.style.background = '#8bac0f';
+                overlay.style.color = '#0f380f';
+                document.getElementById('game-over-title').textContent = 'VICTORY!';
+                playWin();
+                setTimeout(() => {
+                    [1047, 1318, 1568].forEach((f, i) =>
+                        setTimeout(() => playTone(f, 0.2, 'square', 0.1), i * 100)
+                    );
+                }, 500);
+                hapticFeedback('success');
+            } else {
+                // Game over - darker screen, sad tones
+                overlay.style.background = '#306230';
+                overlay.style.color = '#9bbc0f';
+                document.getElementById('game-over-title').textContent = "TIME'S UP!";
                 playLose();
                 hapticFeedback('error');
-            } else {
-                hapticFeedback('success');
             }
+
+            saveStats();
 
             const isNewHighScore = state.score > state.highScore;
             if (isNewHighScore) {
@@ -1934,24 +2362,53 @@
                 addToLeaderboard(state.playerName, state.score, state.level);
             }
 
-            document.getElementById('game-over-title').textContent = won ? 'Victory!' : "Time's Up!";
             document.getElementById('final-score').textContent = state.score;
             document.getElementById('final-level').textContent = state.level;
             document.getElementById('new-high-score').classList.toggle('hidden', !isNewHighScore);
-            document.getElementById('game-over').classList.remove('hidden');
+            overlay.classList.remove('hidden');
         }
 
         function startGame() {
+            const diff = DIFFICULTY[state.difficulty];
             state.gameStarted = false;
             state.gameOver = false;
             state.gamePaused = false;
             state.score = 0;
             state.level = 1;
             state.combo = 0;
-            state.timeLeft = 60;
+            state.timeLeft = diff.time;
+            state.lastTimerTickSecond = -1;
+
+            // Set maze size for level 1
+            const size = getMazeSize(1);
+            state.mazeWidth = size.w;
+            state.mazeHeight = size.h;
+            state.goal = { x: size.w - 2, y: size.h - 2 };
             state.player = { x: 1, y: 1, targetX: 1, targetY: 1, animProgress: 1 };
+
             state.speedBoost = false;
+            state.speedBoostTimer = 0;
+            state.hasShield = false;
+            state.magnetActive = false;
+            state.magnetTimer = 0;
+            state.freezeActive = false;
+            state.freezeTimer = 0;
             state.particles = [];
+            state.floatingTexts = [];
+            state.enemies = [];
+            state.enemyMoveTimer = 0;
+            state.transitioning = false;
+            state.transitionPhase = 'none';
+
+            // Fog of war
+            state.exploredTiles = Array(state.mazeHeight).fill().map(() => Array(state.mazeWidth).fill(false));
+            state.revealPulseActive = false;
+            state.revealPulseTimer = 0;
+            state.revealUsesLeft = diff.revealUses;
+
+            // Stats
+            state.stats.totalGames++;
+            saveStats();
 
             // Start background music on first game start
             startBackgroundMusic();
@@ -1962,12 +2419,23 @@
             // Haptic feedback for game start
             hapticFeedback('medium');
 
+            // Resize canvas for maze dimensions
+            state.tileSize = calculateTileSize();
+            state.canvas.width = state.mazeWidth * state.tileSize;
+            state.canvas.height = state.mazeHeight * state.tileSize;
+
             generateMaze();
+
+            // Mark starting area as explored
+            markExplored(1, 1, 4);
 
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             document.getElementById('game-over').classList.add('hidden');
             document.getElementById('speed-indicator').classList.add('hidden');
+            document.getElementById('shield-indicator').classList.add('hidden');
+            document.getElementById('magnet-indicator').classList.add('hidden');
+            document.getElementById('freeze-indicator').classList.add('hidden');
 
             updateUI();
 
@@ -2019,6 +2487,9 @@
             } else {
                 comboEl.classList.add('hidden');
             }
+
+            // Reveal uses counter
+            document.getElementById('reveal-uses').textContent = `A:${state.revealUsesLeft}`;
         }
 
         // ===== RENDERING (Game Boy Style) =====
@@ -2096,8 +2567,21 @@
                 // Draw ! for powerup
                 ctx.fillStyle = gbColors.lightest;
                 ctx.font = `bold ${tileSize * 0.45}px 'Press Start 2P', monospace`;
-                const icon = p.type === 'speed' ? '!' : '+';
+                const iconMap = { speed: '!', time: '+', shield: 'S', reveal: '?', magnet: 'U', freeze: '*' };
+                const icon = iconMap[p.type] || '!';
                 ctx.fillText(icon, p.x * tileSize + tileSize / 2, p.y * tileSize + tileSize / 2);
+            });
+
+            // Draw enemies - flashing M
+            state.enemies.forEach(e => {
+                const flash = Math.floor(Date.now() / 200) % 2;
+                ctx.fillStyle = flash ? gbColors.darkest : gbColors.dark;
+                ctx.fillRect(e.x * tileSize + 2, e.y * tileSize + 2, tileSize - 4, tileSize - 4);
+                ctx.fillStyle = gbColors.lightest;
+                ctx.font = `bold ${tileSize * 0.5}px 'Press Start 2P', monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('M', e.x * tileSize + tileSize / 2, e.y * tileSize + tileSize / 2);
             });
 
             // Draw particles - simple squares
@@ -2144,6 +2628,104 @@
                     ctx.strokeRect(px, py, tileSize, tileSize);
                 }
             }
+
+            // Shield indicator on player
+            if (state.hasShield) {
+                ctx.strokeStyle = gbColors.lightest;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(px - 1, py - 1, tileSize + 2, tileSize + 2);
+            }
+
+            // Draw floating text
+            state.floatingTexts.forEach(ft => {
+                ctx.globalAlpha = ft.life;
+                ctx.fillStyle = gbColors.darkest;
+                ctx.font = `bold ${tileSize * 0.35}px 'Press Start 2P', monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(ft.text, ft.x, ft.y);
+            });
+            ctx.globalAlpha = 1;
+
+            // ===== FOG OF WAR OVERLAY =====
+            if (state.fogEnabled && !state.revealPulseActive) {
+                const playerTX = state.player.targetX;
+                const playerTY = state.player.targetY;
+
+                for (let y = 0; y < mazeHeight; y++) {
+                    for (let x = 0; x < mazeWidth; x++) {
+                        const dist = Math.abs(x - playerTX) + Math.abs(y - playerTY);
+                        if (dist <= 4) continue; // Fully visible
+
+                        if (state.exploredTiles[y][x]) {
+                            ctx.fillStyle = 'rgba(15, 56, 15, 0.6)';
+                        } else {
+                            ctx.fillStyle = gbColors.darkest;
+                        }
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+
+            // ===== MINIMAP =====
+            if (state.gameStarted && !state.gameOver) {
+                const mmScale = Math.max(1, Math.floor(60 / Math.max(mazeWidth, mazeHeight)));
+                const mmW = mazeWidth * mmScale;
+                const mmH = mazeHeight * mmScale;
+                const mmX = canvas.width - mmW - 4;
+                const mmY = 4;
+
+                // Background
+                ctx.fillStyle = 'rgba(155, 188, 15, 0.85)';
+                ctx.fillRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
+                ctx.strokeStyle = gbColors.darkest;
+                ctx.lineWidth = 1;
+                ctx.strokeRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
+
+                for (let y = 0; y < mazeHeight; y++) {
+                    for (let x = 0; x < mazeWidth; x++) {
+                        if (!state.exploredTiles[y][x] && state.fogEnabled && !state.revealPulseActive) {
+                            ctx.fillStyle = gbColors.darkest;
+                        } else if (maze[y][x] === 1) {
+                            ctx.fillStyle = gbColors.dark;
+                        } else {
+                            ctx.fillStyle = gbColors.light;
+                        }
+                        ctx.fillRect(mmX + x * mmScale, mmY + y * mmScale, mmScale, mmScale);
+                    }
+                }
+
+                // Player dot
+                ctx.fillStyle = gbColors.lightest;
+                ctx.fillRect(mmX + state.player.targetX * mmScale, mmY + state.player.targetY * mmScale, Math.max(mmScale, 2), Math.max(mmScale, 2));
+
+                // Goal dot (if explored or visible)
+                const goalDist = Math.abs(state.goal.x - state.player.targetX) + Math.abs(state.goal.y - state.player.targetY);
+                if (goalDist <= 4 || state.exploredTiles[state.goal.y][state.goal.x] || state.revealPulseActive) {
+                    ctx.fillStyle = gbColors.darkest;
+                    ctx.fillRect(mmX + state.goal.x * mmScale, mmY + state.goal.y * mmScale, Math.max(mmScale, 2), Math.max(mmScale, 2));
+                }
+            }
+
+            // ===== LEVEL TRANSITION OVERLAY =====
+            if (state.transitioning && state.transitionTiles.length > 0) {
+                const progress = Math.min(state.transitionTimer / 500, 1);
+                const tilesToCover = Math.floor(state.transitionTiles.length * progress);
+
+                if (state.transitionPhase === 'dissolve') {
+                    for (let i = 0; i < tilesToCover; i++) {
+                        const t = state.transitionTiles[i];
+                        ctx.fillStyle = gbColors.darkest;
+                        ctx.fillRect(t.x * tileSize, t.y * tileSize, tileSize, tileSize);
+                    }
+                } else if (state.transitionPhase === 'build') {
+                    for (let i = tilesToCover; i < state.transitionTiles.length; i++) {
+                        const t = state.transitionTiles[i];
+                        ctx.fillStyle = gbColors.darkest;
+                        ctx.fillRect(t.x * tileSize, t.y * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
         }
 
         // ===== GAME LOOP =====
@@ -2159,14 +2741,27 @@
                 timerAccum += delta;
                 if (timerAccum >= 1000) {
                     timerAccum -= 1000;
-                    state.timeLeft--;
+                    if (!state.freezeActive) {
+                        state.timeLeft--;
+                    }
+                    // Track total time played
+                    state.stats.totalTimePlayed++;
                     updateUI();
-                    
+
+                    // Timer warning sound
+                    if (state.timeLeft <= 10 && state.timeLeft > 0 && state.timeLeft !== state.lastTimerTickSecond) {
+                        state.lastTimerTickSecond = state.timeLeft;
+                        const freq = 400 + (10 - state.timeLeft) * 40;
+                        playTone(freq, 0.05, 'square', 0.06);
+                        hapticFeedback('light');
+                    }
+
                     if (state.timeLeft <= 0) {
+                        saveStats();
                         gameOverScreen(false);
                     }
                 }
-                
+
                 // Combo timer
                 if (state.comboTimer > 0) {
                     state.comboTimer--;
@@ -2175,7 +2770,7 @@
                         updateUI();
                     }
                 }
-                
+
                 // Speed boost timer
                 if (state.speedBoost) {
                     state.speedBoostTimer--;
@@ -2184,18 +2779,69 @@
                         document.getElementById('speed-indicator').classList.add('hidden');
                     }
                 }
-                
-                // Handle held keys
-                const now = Date.now();
-                const delay = state.speedBoost ? state.moveDelay * 0.5 : state.moveDelay;
-                if (now - state.lastMoveTime >= delay) {
-                    if (state.keysPressed['ArrowUp'] || state.keysPressed['KeyW']) movePlayer(0, -1);
-                    else if (state.keysPressed['ArrowDown'] || state.keysPressed['KeyS']) movePlayer(0, 1);
-                    else if (state.keysPressed['ArrowLeft'] || state.keysPressed['KeyA']) movePlayer(-1, 0);
-                    else if (state.keysPressed['ArrowRight'] || state.keysPressed['KeyD']) movePlayer(1, 0);
+
+                // Magnet effect
+                if (state.magnetActive) {
+                    state.magnetTimer--;
+                    if (state.magnetTimer <= 0) {
+                        state.magnetActive = false;
+                        document.getElementById('magnet-indicator').classList.add('hidden');
+                    } else {
+                        const mpx = state.player.targetX;
+                        const mpy = state.player.targetY;
+                        state.collectibles = state.collectibles.filter(c => {
+                            if (Math.abs(c.x - mpx) <= 2 && Math.abs(c.y - mpy) <= 2) {
+                                state.score += 10;
+                                state.stats.totalGems++;
+                                createParticles(c.x, c.y, '#FFD700', 6);
+                                createFloatingText(c.x, c.y, '+10');
+                                playCollect();
+                                updateUI();
+                                return false;
+                            }
+                            return true;
+                        });
+                    }
                 }
-                
+
+                // Freeze timer
+                if (state.freezeActive) {
+                    state.freezeTimer--;
+                    if (state.freezeTimer <= 0) {
+                        state.freezeActive = false;
+                        document.getElementById('freeze-indicator').classList.add('hidden');
+                    }
+                }
+
+                // Reveal pulse timer
+                if (state.revealPulseActive) {
+                    state.revealPulseTimer--;
+                    if (state.revealPulseTimer <= 0) {
+                        state.revealPulseActive = false;
+                    }
+                }
+
+                // Handle held keys
+                if (!state.transitioning) {
+                    const now = Date.now();
+                    const delay = state.speedBoost ? state.moveDelay * 0.5 : state.moveDelay;
+                    if (now - state.lastMoveTime >= delay) {
+                        if (state.keysPressed['ArrowUp'] || state.keysPressed['KeyW']) movePlayer(0, -1);
+                        else if (state.keysPressed['ArrowDown'] || state.keysPressed['KeyS']) movePlayer(0, 1);
+                        else if (state.keysPressed['ArrowLeft'] || state.keysPressed['KeyA']) movePlayer(-1, 0);
+                        else if (state.keysPressed['ArrowRight'] || state.keysPressed['KeyD']) movePlayer(1, 0);
+                    }
+                }
+
+                // Update systems
+                updateEnemies(delta);
                 updateParticles();
+                // Update floating text
+                state.floatingTexts = state.floatingTexts.filter(ft => {
+                    ft.y += ft.vy;
+                    ft.life -= 0.02;
+                    return ft.life > 0;
+                });
                 draw();
             }
             
@@ -2212,6 +2858,11 @@
                 if (e.code === 'Space') {
                     e.preventDefault();
                     destroyHazard();
+                }
+
+                if (e.code === 'KeyE') {
+                    e.preventDefault();
+                    activateRevealPulse();
                 }
 
                 if (e.code === 'KeyP' || e.code === 'Escape') {
@@ -2383,13 +3034,13 @@
                 btnB.addEventListener('click', handleB);
             }
 
-            // A Button - same as B for now
+            // A Button - reveal pulse
             const btnA = document.getElementById('btn-a');
             if (btnA) {
                 const handleA = createTouchHandler(() => {
                     if (!state.audioCtx) initAudio();
                     hapticFeedback('medium');
-                    destroyHazard();
+                    activateRevealPulse();
                 }, { addPressedClass: true, element: btnA });
 
                 if (supportsPointerEvents) {
@@ -2532,7 +3183,7 @@
 
                 const maxTileW = Math.floor(screenWidth / state.mazeWidth);
                 const maxTileH = Math.floor(screenHeight / state.mazeHeight);
-                return Math.min(Math.max(Math.min(maxTileW, maxTileH), 14), 20);
+                return Math.min(Math.max(Math.min(maxTileW, maxTileH), 10), 20);
             }
         }
 
@@ -2573,10 +3224,17 @@
                 setTimeout(resizeCanvas, 500);
             });
 
-            // Load leaderboard
+            // Load leaderboard and stats
             loadLeaderboard();
+            loadStats();
+
+            // Load saved preferences
+            state.sfxEnabled = localStorage.getItem('mazeSfxEnabled') !== 'false';
+            state.musicEnabled = localStorage.getItem('mazeMusicEnabled') !== 'false';
 
             document.getElementById('high-score').textContent = state.highScore;
+            document.getElementById('sfx-text').textContent = state.sfxEnabled ? 'ON' : 'OFF';
+            document.getElementById('music-text').textContent = state.musicEnabled ? 'ON' : 'OFF';
 
             // Initialize background music
             initBackgroundMusic();
@@ -2683,6 +3341,28 @@
             addTapHandler(document.getElementById('gameover-leaderboard-btn'), showLeaderboard);
             addTapHandler(document.getElementById('close-leaderboard-btn'), hideLeaderboard);
 
+            // SFX toggle
+            addTapHandler(document.getElementById('sfx-toggle'), toggleSFX);
+
+            // Stats buttons
+            addTapHandler(document.getElementById('stats-btn'), showStats);
+            addTapHandler(document.getElementById('close-stats-btn'), hideStats);
+
+            // Difficulty selection
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                addTapHandler(btn, () => {
+                    if (!state.audioCtx) initAudio();
+                    playTone(500, 0.05, 'square', 0.05);
+                    state.difficulty = btn.dataset.diff;
+                    document.querySelectorAll('.diff-btn').forEach(b => {
+                        b.style.background = '#8bac0f';
+                        b.style.color = '#0f380f';
+                    });
+                    btn.style.background = '#306230';
+                    btn.style.color = '#9bbc0f';
+                });
+            });
+
             // Character selection (using symbol mapping)
             document.querySelectorAll('#characters button').forEach(btn => {
                 addTapHandler(btn, () => {
@@ -2717,7 +3397,8 @@
                 requestWakeLock();
             });
             addTapHandler(document.getElementById('quit-btn'), () => {
-                // Save score to leaderboard before quitting
+                // Save score and stats before quitting
+                saveStats();
                 if (state.score > 0) {
                     addToLeaderboard(state.playerName, state.score, state.level);
                 }
