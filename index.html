@@ -292,57 +292,27 @@
             z-index: 2;
         }
 
-        .dpad-btn {
+        /* D-pad touch overlay — single large touch target */
+        #dpad-touch-overlay {
             position: absolute;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            z-index: 3;
-            /* Ensure touch events work on mobile */
-            touch-action: manipulation;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            z-index: 5;
+            touch-action: none;
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
-            /* Minimum touch target size for accessibility */
-            min-width: 44px;
-            min-height: 44px;
+            cursor: pointer;
         }
 
-        .dpad-btn:active,
-        .dpad-btn.pressed {
-            background: rgba(0,0,0,0.25);
-        }
-
-        /* D-pad button positioning - larger touch areas that extend beyond the visual cross */
-        .dpad-up {
-            top: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 44px;
-            height: 40px;
-        }
-        .dpad-down {
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 44px;
-            height: 40px;
-        }
-        .dpad-left {
-            left: -5px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 44px;
-        }
-        .dpad-right {
-            right: -5px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 44px;
-        }
+        /* Directional highlight feedback */
+        .dpad-container.dir-up .dpad-vertical { box-shadow: inset 0 12px 12px -6px rgba(255,255,255,0.25); }
+        .dpad-container.dir-down .dpad-vertical { box-shadow: inset 0 -12px 12px -6px rgba(255,255,255,0.25); }
+        .dpad-container.dir-left .dpad-horizontal { box-shadow: inset 12px 0 12px -6px rgba(255,255,255,0.25); }
+        .dpad-container.dir-right .dpad-horizontal { box-shadow: inset -12px 0 12px -6px rgba(255,255,255,0.25); }
 
         /* Action buttons */
         .action-btn {
@@ -661,11 +631,6 @@
                 height: min(38px, 9.5vw);
             }
 
-            .dpad-btn {
-                width: min(38px, 9.5vw);
-                height: min(38px, 9.5vw);
-            }
-
             /* Responsive action buttons */
             .action-btn {
                 width: min(52px, 14vw);
@@ -740,7 +705,7 @@
                 height: min(32px, 9vw);
             }
 
-            .dpad-center, .dpad-btn {
+            .dpad-center {
                 width: min(32px, 9vw);
                 height: min(32px, 9vw);
             }
@@ -774,7 +739,7 @@
                 height: 42px;
             }
 
-            .dpad-center, .dpad-btn {
+            .dpad-center {
                 width: 42px;
                 height: 42px;
             }
@@ -908,7 +873,7 @@
                 height: min(28px, 6vh) !important;
             }
 
-            .dpad-center, .dpad-btn {
+            .dpad-center {
                 width: min(28px, 6vh) !important;
                 height: min(28px, 6vh) !important;
             }
@@ -970,11 +935,6 @@
 
         .mobile-btn:active {
             transform: scale(0.92) translateZ(0);
-        }
-
-        /* D-pad specific active states */
-        .dpad-btn:active {
-            background: rgba(0, 0, 0, 0.3);
         }
 
         /* Action button active states */
@@ -1206,15 +1166,13 @@
 
         <!-- Physical Controls Area -->
         <div class="controls-area flex justify-between items-start sm:mt-4 px-2">
-            <!-- D-Pad -->
-            <div class="dpad-container">
+            <!-- D-Pad (swipe-based touch control) -->
+            <div class="dpad-container" id="dpad-swipe-area" aria-label="Directional pad">
                 <div class="dpad dpad-vertical"></div>
                 <div class="dpad dpad-horizontal"></div>
-                <div class="dpad-center"></div>
-                <button class="dpad-btn dpad-up mobile-btn" data-dir="up" aria-label="Up"></button>
-                <button class="dpad-btn dpad-down mobile-btn" data-dir="down" aria-label="Down"></button>
-                <button class="dpad-btn dpad-left mobile-btn" data-dir="left" aria-label="Left"></button>
-                <button class="dpad-btn dpad-right mobile-btn" data-dir="right" aria-label="Right"></button>
+                <div class="dpad-center" id="dpad-center-dot"></div>
+                <!-- Single touch overlay covering entire D-pad -->
+                <div id="dpad-touch-overlay"></div>
             </div>
 
             <!-- Center: Start/Select -->
@@ -1478,8 +1436,6 @@
             musicStarted: false,
 
             isMobile: false,
-            touchHoldInterval: null,
-            activeDpadBtn: null,
 
             playerName: '',
             leaderboard: [],
@@ -2924,23 +2880,23 @@
                 };
             }
 
-            // D-Pad buttons - directional controls with hold-to-move
-            const clearDpadHold = () => {
-                if (state.touchHoldInterval) {
-                    clearInterval(state.touchHoldInterval);
-                    state.touchHoldInterval = null;
-                }
-                if (state.activeDpadBtn) {
-                    state.activeDpadBtn.classList.remove('pressed');
-                    state.activeDpadBtn = null;
-                }
-            };
+            // D-Pad swipe controls — single overlay detects thumb swipes
+            const dpadOverlay = document.getElementById('dpad-touch-overlay');
+            const dpadContainer = document.getElementById('dpad-swipe-area');
 
-            document.querySelectorAll('.dpad-btn').forEach(btn => {
-                const dir = btn.dataset.dir;
-                if (!dir) return;
+            if (dpadOverlay && dpadContainer) {
+                const SWIPE_THRESHOLD = 10; // pixels to trigger a move
+                const HOLD_MOVE_INTERVAL = 120; // ms between repeated moves when holding
+                const HOLD_START_DELAY = 180; // ms before hold-to-move kicks in
+                let dpadTouchId = null;
+                let dpadOriginX = 0;
+                let dpadOriginY = 0;
+                let dpadHoldDir = null;
+                let dpadHoldInterval = null;
+                let dpadHoldTimeout = null;
+                let dpadLastDir = null;
 
-                const doMove = () => {
+                const dpadDoMove = (dir) => {
                     if (!state.audioCtx) initAudio();
                     hapticFeedback('light');
                     if (dir === 'up') movePlayer(0, -1);
@@ -2949,72 +2905,154 @@
                     else if (dir === 'right') movePlayer(1, 0);
                 };
 
-                const startHold = (e) => {
+                const setDpadFeedback = (dir) => {
+                    dpadContainer.classList.remove('dir-up', 'dir-down', 'dir-left', 'dir-right');
+                    if (dir) dpadContainer.classList.add('dir-' + dir);
+                };
+
+                const clearDpadState = () => {
+                    dpadTouchId = null;
+                    dpadHoldDir = null;
+                    dpadLastDir = null;
+                    if (dpadHoldInterval) {
+                        clearInterval(dpadHoldInterval);
+                        dpadHoldInterval = null;
+                    }
+                    if (dpadHoldTimeout) {
+                        clearTimeout(dpadHoldTimeout);
+                        dpadHoldTimeout = null;
+                    }
+                    setDpadFeedback(null);
+                };
+
+                const startHoldRepeat = (dir) => {
+                    // Clear any existing hold
+                    if (dpadHoldInterval) clearInterval(dpadHoldInterval);
+                    if (dpadHoldTimeout) clearTimeout(dpadHoldTimeout);
+                    dpadHoldDir = dir;
+                    // Small delay before repeat starts
+                    dpadHoldTimeout = setTimeout(() => {
+                        dpadHoldInterval = setInterval(() => {
+                            if (dpadHoldDir) dpadDoMove(dpadHoldDir);
+                        }, HOLD_MOVE_INTERVAL);
+                    }, HOLD_START_DELAY);
+                };
+
+                const getDirection = (dx, dy) => {
+                    const absDx = Math.abs(dx);
+                    const absDy = Math.abs(dy);
+                    if (absDx < SWIPE_THRESHOLD && absDy < SWIPE_THRESHOLD) return null;
+                    if (absDx > absDy) return dx < 0 ? 'left' : 'right';
+                    return dy < 0 ? 'up' : 'down';
+                };
+
+                dpadOverlay.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (dpadTouchId !== null) return; // already tracking a finger
+                    const touch = e.changedTouches[0];
+                    dpadTouchId = touch.identifier;
+                    dpadOriginX = touch.clientX;
+                    dpadOriginY = touch.clientY;
+                    dpadLastDir = null;
+                    lastTouchTime = Date.now();
+                }, { passive: false });
+
+                dpadOverlay.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    let touch = null;
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === dpadTouchId) {
+                            touch = e.changedTouches[i];
+                            break;
+                        }
+                    }
+                    if (!touch) return;
+
+                    const dx = touch.clientX - dpadOriginX;
+                    const dy = touch.clientY - dpadOriginY;
+                    const dir = getDirection(dx, dy);
+
+                    if (dir) {
+                        setDpadFeedback(dir);
+
+                        // Fire move and reset origin so next swipe starts from here
+                        dpadDoMove(dir);
+                        dpadOriginX = touch.clientX;
+                        dpadOriginY = touch.clientY;
+
+                        // Start or update hold-to-move if direction changed
+                        if (dir !== dpadHoldDir) {
+                            startHoldRepeat(dir);
+                        }
+                        dpadLastDir = dir;
+                    }
+                }, { passive: false });
+
+                const handleDpadEnd = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    let found = false;
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === dpadTouchId) {
+                            found = true;
+                            // Check for tap (no significant movement) — treat as up
+                            const touch = e.changedTouches[i];
+                            const dx = touch.clientX - dpadOriginX;
+                            const dy = touch.clientY - dpadOriginY;
+                            if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD && !dpadLastDir) {
+                                // Tap on d-pad without swipe — no action (require directional input)
+                            }
+                            break;
+                        }
+                    }
+                    if (found || e.touches.length === 0) {
+                        clearDpadState();
+                    }
+                };
+
+                dpadOverlay.addEventListener('touchend', handleDpadEnd, { passive: false });
+                dpadOverlay.addEventListener('touchcancel', handleDpadEnd, { passive: false });
+
+                // Also support mouse for desktop testing
+                let mouseDown = false;
+                dpadOverlay.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const now = Date.now();
-                    const isTouch = isTouchLikeEvent(e);
-
-                    // Prevent double-firing
-                    if (!isTouch && (now - lastTouchTime) < TOUCH_DEBOUNCE) {
-                        return;
+                    if ((now - lastTouchTime) < TOUCH_DEBOUNCE) return;
+                    mouseDown = true;
+                    dpadOriginX = e.clientX;
+                    dpadOriginY = e.clientY;
+                    dpadLastDir = null;
+                });
+                dpadOverlay.addEventListener('mousemove', (e) => {
+                    if (!mouseDown) return;
+                    e.preventDefault();
+                    const dx = e.clientX - dpadOriginX;
+                    const dy = e.clientY - dpadOriginY;
+                    const dir = getDirection(dx, dy);
+                    if (dir) {
+                        setDpadFeedback(dir);
+                        dpadDoMove(dir);
+                        dpadOriginX = e.clientX;
+                        dpadOriginY = e.clientY;
+                        if (dir !== dpadHoldDir) startHoldRepeat(dir);
+                        dpadLastDir = dir;
                     }
-
-                    if (isTouch) {
-                        lastTouchTime = now;
-                        e.preventDefault();
-                    }
-
-                    e.stopPropagation();
-                    if (e.type.startsWith('pointer') && e.pointerId !== undefined) {
-                        btn.setPointerCapture(e.pointerId);
-                    }
-
-                    // Visual feedback
-                    clearDpadHold();
-                    state.activeDpadBtn = btn;
-                    btn.classList.add('pressed');
-
-                    if (!state.audioCtx) initAudio();
-                    doMove();
-
-                    // Enable hold-to-move
-                    if (state.touchHoldInterval) clearInterval(state.touchHoldInterval);
-                    state.touchHoldInterval = setInterval(doMove, 100);
-                };
-
-                const endHold = (e) => {
-                    if (isTouchLikeEvent(e)) {
-                        e.preventDefault();
-                    }
-                    e.stopPropagation();
-
-                    clearDpadHold();
-                    if (e.type.startsWith('pointer') && e.pointerId !== undefined) {
-                        btn.releasePointerCapture(e.pointerId);
+                });
+                const endMouse = () => {
+                    if (mouseDown) {
+                        mouseDown = false;
+                        clearDpadState();
                     }
                 };
+                dpadOverlay.addEventListener('mouseup', endMouse);
+                dpadOverlay.addEventListener('mouseleave', endMouse);
 
-                if (supportsPointerEvents) {
-                    btn.addEventListener('pointerdown', startHold);
-                    btn.addEventListener('pointerup', endHold);
-                    btn.addEventListener('pointercancel', endHold);
-                    btn.addEventListener('pointerleave', endHold);
-                } else {
-                    btn.addEventListener('touchstart', startHold, { passive: false });
-                    btn.addEventListener('touchend', endHold, { passive: false });
-                    btn.addEventListener('touchcancel', endHold, { passive: false });
-                    btn.addEventListener('mousedown', startHold);
-                    btn.addEventListener('mouseup', endHold);
-                    btn.addEventListener('mouseleave', endHold);
-                }
-            });
-
-            window.addEventListener('blur', clearDpadHold);
-            document.addEventListener('mouseup', clearDpadHold);
-            document.addEventListener('touchend', clearDpadHold, { passive: true });
-            document.addEventListener('touchcancel', clearDpadHold, { passive: true });
-            if (supportsPointerEvents) {
-                document.addEventListener('pointerup', clearDpadHold);
-                document.addEventListener('pointercancel', clearDpadHold);
+                // Global cleanup
+                window.addEventListener('blur', clearDpadState);
             }
 
             // B Button - destroy hazard
@@ -3098,10 +3136,7 @@
                 if (state.gamePaused) {
                     pauseBackgroundMusic();
                     releaseWakeLock(); // Release wake lock when paused
-                    if (state.touchHoldInterval) {
-                        clearInterval(state.touchHoldInterval);
-                        state.touchHoldInterval = null;
-                    }
+                    // D-pad swipe state is managed by its own clearDpadState
                 } else {
                     resumeBackgroundMusic();
                     requestWakeLock(); // Request wake lock when unpaused
