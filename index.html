@@ -1446,6 +1446,7 @@
 
             isMobile: false,
             touchHoldInterval: null,
+            activeDpadBtn: null,
 
             playerName: '',
             leaderboard: [],
@@ -2264,6 +2265,17 @@
             }
 
             // D-Pad buttons - directional controls with hold-to-move
+            const clearDpadHold = () => {
+                if (state.touchHoldInterval) {
+                    clearInterval(state.touchHoldInterval);
+                    state.touchHoldInterval = null;
+                }
+                if (state.activeDpadBtn) {
+                    state.activeDpadBtn.classList.remove('pressed');
+                    state.activeDpadBtn = null;
+                }
+            };
+
             document.querySelectorAll('.dpad-btn').forEach(btn => {
                 const dir = btn.dataset.dir;
                 if (!dir) return;
@@ -2294,6 +2306,8 @@
                     e.stopPropagation();
 
                     // Visual feedback
+                    clearDpadHold();
+                    state.activeDpadBtn = btn;
                     btn.classList.add('pressed');
 
                     if (!state.audioCtx) initAudio();
@@ -2310,13 +2324,7 @@
                     }
                     e.stopPropagation();
 
-                    // Remove visual feedback
-                    btn.classList.remove('pressed');
-
-                    if (state.touchHoldInterval) {
-                        clearInterval(state.touchHoldInterval);
-                        state.touchHoldInterval = null;
-                    }
+                    clearDpadHold();
                 };
 
                 btn.addEventListener('touchstart', startHold, { passive: false });
@@ -2326,6 +2334,11 @@
                 btn.addEventListener('mouseup', endHold);
                 btn.addEventListener('mouseleave', endHold);
             });
+
+            window.addEventListener('blur', clearDpadHold);
+            document.addEventListener('mouseup', clearDpadHold);
+            document.addEventListener('touchend', clearDpadHold, { passive: true });
+            document.addEventListener('touchcancel', clearDpadHold, { passive: true });
 
             // B Button - destroy hazard
             const btnB = document.getElementById('btn-b');
