@@ -25,7 +25,8 @@
         :root {
             /* Dynamic viewport height - set by JS for iOS Safari compatibility */
             --vh: 1vh;
-            --app-height: 100vh;
+            --app-height: 100dvh;
+            --app-width: 100vw;
             /* Safe area insets - set by JS */
             --safe-area-top: 0px;
             --safe-area-bottom: 0px;
@@ -60,7 +61,10 @@
             user-select: none;
             height: 100%;
             height: var(--app-height);
+            min-height: var(--app-height);
             width: 100%;
+            width: var(--app-width);
+            min-width: var(--app-width);
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             /* Prevent pull-to-refresh and overscroll */
             overscroll-behavior: none;
@@ -510,9 +514,10 @@
                 background: linear-gradient(145deg, #8b8b9b 0%, #6b6b7b 50%, #5a5a6a 100%);
                 overflow: hidden;
                 position: fixed;
-                width: 100%;
-                height: 100%;
+                width: var(--app-width);
+                min-width: var(--app-width);
                 height: var(--app-height);
+                min-height: var(--app-height);
                 /* Prevent iOS rubber-banding */
                 overscroll-behavior: none;
             }
@@ -528,9 +533,10 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                width: 100% !important;
-                height: 100% !important;
+                width: var(--app-width) !important;
+                min-width: var(--app-width) !important;
                 height: var(--app-height) !important;
+                min-height: var(--app-height) !important;
                 max-width: none !important;
                 border-radius: 0 !important;
                 padding: 8px;
@@ -1226,9 +1232,13 @@
 
         // Viewport height fix for iOS Safari (dynamic toolbars)
         function setAppHeight() {
-            const vh = window.innerHeight * 0.01;
+            const viewport = window.visualViewport;
+            const viewportHeight = viewport ? viewport.height : window.innerHeight;
+            const viewportWidth = viewport ? viewport.width : window.innerWidth;
+            const vh = viewportHeight * 0.01;
             document.documentElement.style.setProperty('--vh', `${vh}px`);
-            document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+            document.documentElement.style.setProperty('--app-height', `${viewportHeight}px`);
+            document.documentElement.style.setProperty('--app-width', `${viewportWidth}px`);
 
             // Also set safe area insets if available
             const computedStyle = getComputedStyle(document.documentElement);
@@ -1249,6 +1259,10 @@
             setTimeout(setAppHeight, 300);
             setTimeout(setAppHeight, 500);
         });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', setAppHeight);
+            window.visualViewport.addEventListener('scroll', setAppHeight);
+        }
 
         // Update when page visibility changes
         document.addEventListener('visibilitychange', () => {
