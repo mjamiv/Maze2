@@ -2232,6 +2232,15 @@
             // Track last touch time to prevent double-firing from touch + synthetic click
             let lastTouchTime = 0;
             const TOUCH_DEBOUNCE = 300; // ms
+            const supportsPointerEvents = 'PointerEvent' in window;
+
+            const isTouchLikeEvent = (event) => {
+                if (event.type.startsWith('touch')) return true;
+                if (event.type.startsWith('pointer')) {
+                    return event.pointerType && event.pointerType !== 'mouse';
+                }
+                return false;
+            };
 
             // Helper to create touch-aware handlers that prevent double-firing
             function createTouchHandler(handler, options = {}) {
@@ -2239,7 +2248,7 @@
 
                 return function(e) {
                     const now = Date.now();
-                    const isTouch = e.type.startsWith('touch');
+                    const isTouch = isTouchLikeEvent(e);
 
                     // Prevent double-firing: if this is a click shortly after a touch, ignore it
                     if (!isTouch && (now - lastTouchTime) < TOUCH_DEBOUNCE) {
@@ -2291,7 +2300,7 @@
 
                 const startHold = (e) => {
                     const now = Date.now();
-                    const isTouch = e.type.startsWith('touch');
+                    const isTouch = isTouchLikeEvent(e);
 
                     // Prevent double-firing
                     if (!isTouch && (now - lastTouchTime) < TOUCH_DEBOUNCE) {
@@ -2304,6 +2313,9 @@
                     }
 
                     e.stopPropagation();
+                    if (e.type.startsWith('pointer') && e.pointerId !== undefined) {
+                        btn.setPointerCapture(e.pointerId);
+                    }
 
                     // Visual feedback
                     clearDpadHold();
@@ -2319,26 +2331,40 @@
                 };
 
                 const endHold = (e) => {
-                    if (e.type.startsWith('touch')) {
+                    if (isTouchLikeEvent(e)) {
                         e.preventDefault();
                     }
                     e.stopPropagation();
 
                     clearDpadHold();
+                    if (e.type.startsWith('pointer') && e.pointerId !== undefined) {
+                        btn.releasePointerCapture(e.pointerId);
+                    }
                 };
 
-                btn.addEventListener('touchstart', startHold, { passive: false });
-                btn.addEventListener('touchend', endHold, { passive: false });
-                btn.addEventListener('touchcancel', endHold, { passive: false });
-                btn.addEventListener('mousedown', startHold);
-                btn.addEventListener('mouseup', endHold);
-                btn.addEventListener('mouseleave', endHold);
+                if (supportsPointerEvents) {
+                    btn.addEventListener('pointerdown', startHold);
+                    btn.addEventListener('pointerup', endHold);
+                    btn.addEventListener('pointercancel', endHold);
+                    btn.addEventListener('pointerleave', endHold);
+                } else {
+                    btn.addEventListener('touchstart', startHold, { passive: false });
+                    btn.addEventListener('touchend', endHold, { passive: false });
+                    btn.addEventListener('touchcancel', endHold, { passive: false });
+                    btn.addEventListener('mousedown', startHold);
+                    btn.addEventListener('mouseup', endHold);
+                    btn.addEventListener('mouseleave', endHold);
+                }
             });
 
             window.addEventListener('blur', clearDpadHold);
             document.addEventListener('mouseup', clearDpadHold);
             document.addEventListener('touchend', clearDpadHold, { passive: true });
             document.addEventListener('touchcancel', clearDpadHold, { passive: true });
+            if (supportsPointerEvents) {
+                document.addEventListener('pointerup', clearDpadHold);
+                document.addEventListener('pointercancel', clearDpadHold);
+            }
 
             // B Button - destroy hazard
             const btnB = document.getElementById('btn-b');
@@ -2349,7 +2375,11 @@
                     destroyHazard();
                 }, { addPressedClass: true, element: btnB });
 
-                btnB.addEventListener('touchstart', handleB, { passive: false });
+                if (supportsPointerEvents) {
+                    btnB.addEventListener('pointerdown', handleB);
+                } else {
+                    btnB.addEventListener('touchstart', handleB, { passive: false });
+                }
                 btnB.addEventListener('click', handleB);
             }
 
@@ -2362,7 +2392,11 @@
                     destroyHazard();
                 }, { addPressedClass: true, element: btnA });
 
-                btnA.addEventListener('touchstart', handleA, { passive: false });
+                if (supportsPointerEvents) {
+                    btnA.addEventListener('pointerdown', handleA);
+                } else {
+                    btnA.addEventListener('touchstart', handleA, { passive: false });
+                }
                 btnA.addEventListener('click', handleA);
             }
 
@@ -2375,7 +2409,11 @@
                     togglePause();
                 }, { addPressedClass: true, element: selectBtn });
 
-                selectBtn.addEventListener('touchstart', handleSelect, { passive: false });
+                if (supportsPointerEvents) {
+                    selectBtn.addEventListener('pointerdown', handleSelect);
+                } else {
+                    selectBtn.addEventListener('touchstart', handleSelect, { passive: false });
+                }
                 selectBtn.addEventListener('click', handleSelect);
             }
 
@@ -2392,7 +2430,11 @@
                     }
                 }, { addPressedClass: true, element: startGameBtn });
 
-                startGameBtn.addEventListener('touchstart', handleStart, { passive: false });
+                if (supportsPointerEvents) {
+                    startGameBtn.addEventListener('pointerdown', handleStart);
+                } else {
+                    startGameBtn.addEventListener('touchstart', handleStart, { passive: false });
+                }
                 startGameBtn.addEventListener('click', handleStart);
             }
         }
