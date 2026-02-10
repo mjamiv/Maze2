@@ -457,6 +457,26 @@
             animation: blink 1s step-end infinite;
         }
 
+        /* Boot screen */
+        @keyframes boot-fade-in {
+            0% { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        #boot-screen {
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .boot-credit {
+            opacity: 0;
+            animation: boot-fade-in 0.6s ease-out forwards;
+        }
+
+        .boot-credit:nth-child(1) { animation-delay: 0.3s; }
+        .boot-credit:nth-child(2) { animation-delay: 1.1s; }
+        .boot-credit:nth-child(3) { animation-delay: 1.9s; }
+
         #game-canvas {
             image-rendering: pixelated;
             image-rendering: crisp-edges;
@@ -998,8 +1018,24 @@
             <div class="lcd-screen">
                 <div id="app" class="screen-content p-3 sm:p-4 relative" style="min-height: 320px;">
 
+                    <!-- Boot Screen -->
+                    <div id="boot-screen" class="flex flex-col items-center justify-center h-full" style="gap: 20px;">
+                        <div class="boot-credit text-center">
+                            <div class="text-xs" style="font-size: 9px; letter-spacing: 1px;">GAME BY</div>
+                            <div class="text-sm" style="font-size: 11px; margin-top: 2px;">MJAMIV</div>
+                        </div>
+                        <div class="boot-credit text-center">
+                            <div class="text-xs" style="font-size: 9px; letter-spacing: 1px;">CODE BY</div>
+                            <div class="text-sm" style="font-size: 11px; margin-top: 2px;">CLAUDE-CODE</div>
+                        </div>
+                        <div class="boot-credit text-center">
+                            <div class="text-xs" style="font-size: 9px; letter-spacing: 1px;">MUSIC BY</div>
+                            <div class="text-sm" style="font-size: 11px; margin-top: 2px;">MJAMIV</div>
+                        </div>
+                    </div>
+
                     <!-- Name Entry Screen -->
-                    <div id="name-screen" class="flex flex-col items-center justify-center h-full">
+                    <div id="name-screen" class="hidden flex flex-col items-center justify-center h-full">
                         <h1 class="text-sm sm:text-base mb-1 text-center leading-relaxed">MAZE</h1>
                         <h1 class="text-sm sm:text-base mb-4 text-center leading-relaxed">RUNNER</h1>
                         <div class="w-16 h-1 bg-[#0f380f] mb-4"></div>
@@ -1155,7 +1191,10 @@
 
                     <!-- Leaderboard Overlay -->
                     <div id="leaderboard-overlay" class="hidden absolute inset-0 flex flex-col items-center z-20 p-3" style="background: #9bbc0f;">
-                        <h2 class="text-xs mb-3">HIGH SCORES</h2>
+                        <div class="flex items-center gap-2 mb-3">
+                            <h2 class="text-xs">HIGH SCORES</h2>
+                            <span id="leaderboard-badge" style="font-size: 5px; color: #9bbc0f; background: #0f380f; padding: 1px 4px; border-radius: 2px;">LOCAL</span>
+                        </div>
                         <div id="leaderboard-list" class="w-full flex-1 overflow-y-auto mb-3 border-3 border-[#0f380f] p-2" style="background: #8bac0f; max-height: 200px;">
                             <!-- Leaderboard entries will be inserted here -->
                         </div>
@@ -1344,6 +1383,38 @@
             if (containerEl) {
                 containerEl.style.opacity = '1';
             }
+
+            startBootSequence();
+        }
+
+        function startBootSequence() {
+            const bootScreen = document.getElementById('boot-screen');
+            let bootTimer = setTimeout(endBootSequence, 3500);
+
+            function skipBoot() {
+                clearTimeout(bootTimer);
+                bootScreen.removeEventListener('pointerdown', skipBoot);
+                endBootSequence();
+            }
+
+            bootScreen.addEventListener('pointerdown', skipBoot);
+        }
+
+        let bootEnded = false;
+        function endBootSequence() {
+            if (bootEnded) return;
+            bootEnded = true;
+            const bootScreen = document.getElementById('boot-screen');
+            const nameScreen = document.getElementById('name-screen');
+
+            bootScreen.classList.add('hidden');
+            nameScreen.classList.remove('hidden');
+
+            // Play a short chime
+            try {
+                playTone(880, 0.08, 'square', 0.15);
+                setTimeout(() => playTone(1174.66, 0.12, 'square', 0.15), 80);
+            } catch (e) {}
         }
 
         // Wait for fonts to load before showing app
@@ -1396,6 +1467,12 @@
         function getDevicePixelRatio() {
             return Math.min(window.devicePixelRatio || 1, 3); // Cap at 3x for performance
         }
+
+        // ===== FIREBASE CONFIG =====
+        // To enable online leaderboard, create a Firebase Realtime Database and paste the URL below.
+        // Example: 'https://your-project-default-rtdb.firebaseio.com'
+        // Leave empty to use local-only leaderboard.
+        const FIREBASE_DB_URL = 'https://maze2-36f1f-default-rtdb.firebaseio.com';
 
         // ===== GAME STATE =====
         const state = {
@@ -1539,6 +1616,23 @@
             }
         }
 
+        function firebaseSubmitScore(entry) {
+            if (!FIREBASE_DB_URL) return;
+            fetch(FIREBASE_DB_URL + '/leaderboard.json', {
+                method: 'POST',
+                body: JSON.stringify(entry)
+            }).catch(() => {});
+        }
+
+        async function firebaseLoadLeaderboard() {
+            const res = await fetch(FIREBASE_DB_URL + '/leaderboard.json');
+            const data = await res.json();
+            if (!data) return [];
+            return Object.values(data)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 20);
+        }
+
         function addToLeaderboard(name, score, level) {
             const entry = {
                 name: name || 'Anonymous',
@@ -1551,17 +1645,18 @@
             state.leaderboard.sort((a, b) => b.score - a.score);
             state.leaderboard = state.leaderboard.slice(0, 20);
             saveLeaderboard();
+            firebaseSubmitScore(entry);
         }
 
-        function renderLeaderboard() {
+        function renderLeaderboard(entries) {
             const list = document.getElementById('leaderboard-list');
-            if (state.leaderboard.length === 0) {
+            if (entries.length === 0) {
                 list.innerHTML = '<p class="text-center py-4" style="font-size: 6px; color: #0f380f;">NO SCORES YET</p>';
                 return;
             }
 
             let html = '<div class="space-y-1">';
-            state.leaderboard.forEach((entry, index) => {
+            entries.forEach((entry, index) => {
                 const rank = String(index + 1).padStart(2, '0');
                 const isCurrentPlayer = entry.name === state.playerName;
                 const marker = isCurrentPlayer ? '>' : ' ';
@@ -1577,9 +1672,30 @@
             list.innerHTML = html;
         }
 
-        function showLeaderboard() {
-            renderLeaderboard();
-            document.getElementById('leaderboard-overlay').classList.remove('hidden');
+        function updateLeaderboardBadge(mode) {
+            const badge = document.getElementById('leaderboard-badge');
+            if (badge) badge.textContent = mode;
+        }
+
+        async function showLeaderboard() {
+            const overlay = document.getElementById('leaderboard-overlay');
+            overlay.classList.remove('hidden');
+
+            if (FIREBASE_DB_URL) {
+                updateLeaderboardBadge('LOADING');
+                renderLeaderboard(state.leaderboard);
+                try {
+                    const online = await firebaseLoadLeaderboard();
+                    updateLeaderboardBadge('ONLINE');
+                    renderLeaderboard(online);
+                } catch (e) {
+                    updateLeaderboardBadge('LOCAL');
+                    renderLeaderboard(state.leaderboard);
+                }
+            } else {
+                updateLeaderboardBadge('LOCAL');
+                renderLeaderboard(state.leaderboard);
+            }
         }
 
         function hideLeaderboard() {

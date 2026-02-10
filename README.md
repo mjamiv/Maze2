@@ -15,6 +15,7 @@ Navigate through procedurally generated mazes, collect gems, avoid hazards, and 
 |-----|--------|
 | Arrow Keys / WASD | Move |
 | Space | Destroy adjacent hazard |
+| E | Reveal map (limited uses) |
 | P / Esc | Pause game |
 
 ### Game Elements
@@ -34,13 +35,16 @@ Navigate through procedurally generated mazes, collect gems, avoid hazards, and 
 ## Features
 
 - Procedurally generated mazes that are always solvable
+- Game Boy-style boot screen with credits on every launch
+- First-time tutorial with guided training steps
 - Multiple character choices
+- Enemies with patrol AI, fog of war, shield/magnet/freeze powerups
 - Combo system for consecutive gem collection
 - Background music with mute toggle
-- Sound effects for actions
-- Mobile touch controls
+- Procedural sound effects via Web Audio API
+- Mobile touch controls (D-pad swipe + A/B buttons)
 - Local high score tracking
-- Progressive difficulty across levels
+- Progressive difficulty across levels (Easy/Medium/Hard)
 
 ## Running the Game
 

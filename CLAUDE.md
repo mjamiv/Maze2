@@ -28,8 +28,11 @@ The game is intentionally kept as a single HTML file for simplicity and portabil
 - Audio context and music state
 
 **Core Systems**:
+- Boot screen with staggered credit animations (`startBootSequence()` / `endBootSequence()`)
 - Maze generation using recursive backtracking algorithm
 - Pathfinding validation to ensure solvability
+- Tutorial system for first-time players (5 guided steps)
+- Enemy patrol AI, fog of war, powerup system (shield, magnet, freeze)
 - Particle system for visual effects
 - Web Audio API for sound effects
 - HTML5 Audio for background music
