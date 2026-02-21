@@ -1,80 +1,116 @@
-# Claude.md
+# CLAUDE.md
 
-This file provides context for AI assistants working on this project.
+This file provides context for AI assistants and maintainers working on this project.
 
 ## Project Overview
 
-Maze Runner Pro is a single-file HTML5 maze game. All game logic, styling, and markup are contained in `index.html` with no external dependencies except for Tailwind CSS (loaded via CDN).
+Maze Runner Pro is a single-file browser game in `index.html` with a retro "GameyBoy" presentation:
 
-## Architecture
+- Device shell UI + LCD styling
+- 4-tone green Game Boy palette
+- Canvas-based maze gameplay with procedural generation
+- Desktop and mobile control schemes
 
-### Single File Structure
+No build system is used.
 
-The game is intentionally kept as a single HTML file for simplicity and portability:
+## Runtime Dependencies
 
-- **HTML** (lines 1-141): Game UI structure including menu, game screen, overlays
-- **CSS** (lines 8-23): Custom animations and styles (Tailwind handles the rest)
-- **JavaScript** (lines 143-873): All game logic in a single script block
+- Tailwind browser build via CDN (`@tailwindcss/browser`)
+- Google Fonts (`Press Start 2P`)
+- Optional Firebase Realtime Database endpoint for leaderboard sync
+- Local asset: `playdate.mp3`
 
-### Key Components
+## File Layout
 
-**State Object** (`state`): Central game state containing:
-- Canvas and rendering context
-- Maze data and dimensions
-- Player position and animation
-- Game entities (hazards, collectibles, powerups, particles)
-- Game flow flags (started, paused, over)
-- Score, level, timer, combo
-- Audio context and music state
+- `index.html`: Entire application (HTML, CSS, JavaScript)
+- `playdate.mp3`: Background music loop
+- `README.md`: Player-facing docs
 
-**Core Systems**:
-- Boot screen with staggered credit animations (`startBootSequence()` / `endBootSequence()`)
-- Maze generation using recursive backtracking algorithm
-- Pathfinding validation to ensure solvability
-- Tutorial system for first-time players (5 guided steps)
-- Enemy patrol AI, fog of war, powerup system (shield, magnet, freeze)
-- Particle system for visual effects
-- Web Audio API for sound effects
-- HTML5 Audio for background music
+`index.html` is large (4k+ lines). Use section markers (`// ===== ... =====`) as the main navigation anchors.
 
-### Audio
+## Code Architecture (Inside `index.html`)
 
-- **Sound Effects**: Generated procedurally using Web Audio API oscillators
-- **Background Music**: `playdate.mp3` loaded via HTML5 `<audio>` element with loop
+Major JavaScript sections are explicitly labeled:
 
-## Development Notes
+- `INDUSTRY-GRADE MOBILE SETUP`
+- `HAPTIC FEEDBACK`
+- `SCREEN WAKE LOCK`
+- `FONT LOADING & APP INITIALIZATION`
+- `FIREBASE CONFIG`
+- `GAME STATE`
+- `DIFFICULTY CONFIG`
+- `LEADERBOARD`
+- `STATS`
+- `AUDIO` and `BACKGROUND MUSIC`
+- `MAZE GENERATION`
+- `PARTICLES`
+- `FOG OF WAR`
+- `ENEMIES`
+- `MOVEMENT`
+- `TUTORIAL SYSTEM`
+- `GAME FLOW`
+- `RENDERING`
+- `GAME LOOP`
+- `INPUT`
+- `SETUP`
 
-### Adding New Features
+## Theme and Rendering Rules
 
-When adding features, keep everything in `index.html` to maintain the single-file approach. The code is organized into clearly labeled sections:
-- `// ===== SECTION NAME =====`
+The game intentionally commits to retro visuals:
 
-### Browser Compatibility
+- Preserve the Game Boy palette and pixel feel.
+- Entity visuals are logo-based mini pixel art, not plain glyphs.
+- Main logos are defined in render constants:
+  - `ENTITY_LOGOS.player` (`@` avatar style)
+  - `ENTITY_LOGOS.gem` (`*` collectible style)
+  - `ENTITY_LOGOS.hazard` (`X` trap style)
+  - `ENTITY_LOGOS.enemy` (`M` monster style)
+- `drawLogoTile()` renders these logos on the canvas tile grid.
 
-- Uses standard Web APIs (Canvas, Web Audio, LocalStorage)
-- Tailwind CSS loaded from CDN
-- Mobile support via touch controls
+When changing entity visuals, update the logo definitions and shared renderer instead of duplicating per-entity drawing logic.
 
-### Testing
+## State Model
 
-Open `index.html` directly in a browser. No build process required.
+`state` is the single source of truth for:
 
-## Common Tasks
+- Maze geometry and canvas sizing
+- Player movement/animation targets
+- Hazards, collectibles, enemies, powerups, particles
+- Difficulty, timer, scoring, combo
+- Tutorial/progression and transitions
+- Fog/minimap/reveal state
+- Audio/music flags
+- Leaderboard and persistent stats
 
-### Adding New Power-ups
+## Gameplay Notes
 
-1. Add power-up type in `generateMaze()` function
-2. Handle collection in `movePlayer()` function
-3. Add visual indicator if needed
-4. Apply effect in game loop
+- Maze generation guarantees a reachable goal.
+- Difficulty is centralized in `DIFFICULTY`.
+- Enemy movement cadence depends on difficulty interval.
+- Attack can remove adjacent hazards/enemies.
+- Tutorial and main game flows are separate entry paths.
 
-### Modifying Difficulty
+## Leaderboard and Persistence
 
-Adjust parameters in:
-- `generateMaze()` - hazard count, extra paths
-- `startGame()` - initial time
-- `nextLevel()` - time reduction per level
+- Local leaderboard/stats use `localStorage`.
+- Firebase URL is configured in `FIREBASE_DB_URL`.
+- `ALLOW_UNVERIFIED_FIREBASE_WRITES` is intentionally `false` by default.
 
-### Adding Sound Effects
+Treat remote writes as untrusted unless server-validated.
 
-Use the `playTone(freq, duration, type, volume)` function or create a new helper similar to `playCollect()`, `playMove()`, etc.
+## Editing Guidelines
+
+- Keep the single-file architecture unless explicitly asked otherwise.
+- Reuse existing section structure and helper functions.
+- Prefer minimal, targeted patches over broad rewrites.
+- Keep mobile behavior intact (touch input, viewport/safe-area handling, wake lock).
+- Maintain retro tone in copy and UI labels.
+
+## Manual Testing
+
+Primary validation is manual in browser:
+
+1. Open `index.html`
+2. Verify boot/menu/game screens on desktop and mobile layout
+3. Verify movement, collisions, tutorial flow, pause/resume, and audio toggles
+4. Confirm entity logos (player/gem/hazard/enemy) render correctly at different tile sizes
