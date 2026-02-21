@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src 'self' https://maze2-36f1f-default-rtdb.firebaseio.com; img-src 'self' data:; media-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
     <!-- PWA & Mobile App Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,7 +18,7 @@
     <title>Maze Runner - GameyBoy</title>
     <!-- Preload critical font -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" as="style">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.0/dist/index.global.js" integrity="sha384-bNsax73PC6D4xYSie+xNpMGj6fF6bgWPHOoXMLpYtrI6eZPTxNAJHmkPQAnr8atN" crossorigin="anonymous"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -34,7 +35,7 @@
             --safe-area-right: 0px;
         }
 
-        /* Critical: Prevent ALL zoom and scaling behaviors */
+        /* Base interaction defaults */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
@@ -163,7 +164,7 @@
             top: -8px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 5px;
+            font-size: clamp(8px, 1.8vw, 9px);
             color: #4a4a5a;
             letter-spacing: 1px;
             white-space: nowrap;
@@ -1039,8 +1040,8 @@
                         <h1 class="text-sm sm:text-base mb-1 text-center leading-relaxed">MAZE</h1>
                         <h1 class="text-sm sm:text-base mb-4 text-center leading-relaxed">RUNNER</h1>
                         <div class="w-16 h-1 bg-[#0f380f] mb-4"></div>
-                        <p class="text-xs mb-4 text-center">ENTER NAME</p>
-                        <input type="text" id="player-name-input" maxlength="10" placeholder="PLAYER"
+                        <label for="player-name-input" class="text-xs mb-4 text-center">ENTER NAME</label>
+                        <input type="text" id="player-name-input" maxlength="10" placeholder="PLAYER" autocomplete="nickname"
                             class="px-3 py-2 text-center text-xs mb-4 w-40 uppercase">
                         <button id="start-btn" class="px-6 py-2 text-xs">START</button>
                     </div>
@@ -1053,20 +1054,20 @@
                         <div class="border-3 border-[#0f380f] p-2 sm:p-3 mb-3 w-full" style="background: #8bac0f;">
                             <h3 class="text-xs mb-2">HOW TO PLAY</h3>
                             <!-- Desktop controls -->
-                            <div class="desktop-only text-xs space-y-1" style="font-size: 6px; line-height: 1.4;">
+                            <div class="desktop-only text-xs space-y-1" style="font-size: clamp(9px, 2vw, 10px); line-height: 1.4;">
                                 <div>ARROWS/WASD = MOVE</div>
                                 <div>SPACE = ATTACK</div>
                                 <div>E = REVEAL MAP</div>
                                 <div>P/ESC = PAUSE</div>
                             </div>
                             <!-- Mobile controls -->
-                            <div class="mobile-only text-xs space-y-1" style="font-size: 6px; line-height: 1.4;">
+                            <div class="mobile-only text-xs space-y-1" style="font-size: clamp(9px, 2vw, 10px); line-height: 1.4;">
                                 <div>D-PAD = MOVE</div>
                                 <div>B BTN = ATTACK</div>
                                 <div>A BTN = REVEAL</div>
                                 <div>SELECT = PAUSE</div>
                             </div>
-                            <div class="mt-2 pt-2 border-t-2 border-[#0f380f]" style="font-size: 6px;">
+                            <div class="mt-2 pt-2 border-t-2 border-[#0f380f]" style="font-size: clamp(9px, 2vw, 10px);">
                                 <p>F=GOAL *=GEM X=HAZARD M=ENEMY</p>
                                 <p>!=SPD +=TIME S=SHLD ?=MAP</p>
                             </div>
@@ -1076,45 +1077,45 @@
                         <div id="characters" class="flex gap-2 mb-3">
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="W">
                                 <span class="text-lg mb-1">@</span>
-                                <span style="font-size: 5px;">WIZARD</span>
+                                <span style="font-size: clamp(8px, 1.8vw, 9px);">WIZARD</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="F">
                                 <span class="text-lg mb-1">&amp;</span>
-                                <span style="font-size: 5px;">FOX</span>
+                                <span style="font-size: clamp(8px, 1.8vw, 9px);">FOX</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="R">
                                 <span class="text-lg mb-1">#</span>
-                                <span style="font-size: 5px;">ROBOT</span>
+                                <span style="font-size: clamp(8px, 1.8vw, 9px);">ROBOT</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="G">
                                 <span class="text-lg mb-1">%</span>
-                                <span style="font-size: 5px;">GHOST</span>
+                                <span style="font-size: clamp(8px, 1.8vw, 9px);">GHOST</span>
                             </button>
                         </div>
 
                         <h3 class="text-xs mb-2">DIFFICULTY</h3>
                         <div id="difficulty-select" class="flex gap-2 mb-3">
-                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #8bac0f;" data-diff="easy">EASY</button>
-                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #306230; color: #9bbc0f;" data-diff="medium">MEDIUM</button>
-                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #8bac0f;" data-diff="hard">HARD</button>
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: clamp(8px, 1.8vw, 9px); background: #8bac0f;" data-diff="easy">EASY</button>
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: clamp(8px, 1.8vw, 9px); background: #306230; color: #9bbc0f;" data-diff="medium">MEDIUM</button>
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: clamp(8px, 1.8vw, 9px); background: #8bac0f;" data-diff="hard">HARD</button>
                         </div>
 
                         <button id="play-btn" class="px-6 py-2 text-xs mb-3">► PLAY</button>
 
-                        <p class="text-xs mb-2" style="font-size: 6px;">HIGH SCORE: <span id="high-score">0</span></p>
+                        <p class="text-xs mb-2" style="font-size: clamp(9px, 2vw, 10px);">HIGH SCORE: <span id="high-score">0</span></p>
 
                         <div class="flex gap-2 flex-wrap justify-center">
-                            <button id="music-toggle" class="px-3 py-1" style="font-size: 6px;">
+                            <button id="music-toggle" class="px-3 py-1" style="font-size: clamp(9px, 2vw, 10px);">
                                 <span id="music-icon">♪</span>
                                 <span id="music-text">ON</span>
                             </button>
-                            <button id="sfx-toggle" class="px-3 py-1" style="font-size: 6px;">
+                            <button id="sfx-toggle" class="px-3 py-1" style="font-size: clamp(9px, 2vw, 10px);">
                                 SFX <span id="sfx-text">ON</span>
                             </button>
-                            <button id="leaderboard-btn" class="px-3 py-1" style="font-size: 6px;">
+                            <button id="leaderboard-btn" class="px-3 py-1" style="font-size: clamp(9px, 2vw, 10px);">
                                 SCORES
                             </button>
-                            <button id="stats-btn" class="px-3 py-1" style="font-size: 6px;">
+                            <button id="stats-btn" class="px-3 py-1" style="font-size: clamp(9px, 2vw, 10px);">
                                 STATS
                             </button>
                         </div>
@@ -1123,13 +1124,13 @@
                     <!-- Game Screen -->
                     <div id="game-screen" class="hidden flex flex-col items-center h-full">
                         <!-- HUD -->
-                        <div class="flex justify-between items-center w-full mb-1 text-xs" style="font-size: 7px;">
+                        <div class="flex justify-between items-center w-full mb-1 text-xs" style="font-size: clamp(10px, 2.2vw, 11px);">
                             <div class="flex gap-2">
                                 <span id="score">SC:0000</span>
                                 <span id="combo" class="hidden blink">x2!</span>
                             </div>
                             <div class="flex gap-2">
-                                <span id="reveal-uses" style="font-size: 6px;">A:1</span>
+                                <span id="reveal-uses" style="font-size: clamp(9px, 2vw, 10px);">A:1</span>
                                 <span id="level">LV:01</span>
                                 <span id="timer">T:60</span>
                             </div>
@@ -1147,24 +1148,24 @@
                             <div id="level-complete" class="hidden absolute inset-0 flex flex-col items-center justify-center p-4" style="background: rgba(155,188,15,0.95);">
                                 <h2 class="text-sm mb-2">LEVEL CLEAR!</h2>
                                 <p class="text-xs mb-1">BONUS: +<span id="level-bonus">0</span></p>
-                                <p class="text-xs" style="font-size: 6px;">NEXT: <span id="next-level-timer">3</span></p>
+                                <p class="text-xs" style="font-size: clamp(9px, 2vw, 10px);">NEXT: <span id="next-level-timer">3</span></p>
                             </div>
 
                             <!-- Tutorial Skip Button -->
                             <button id="tutorial-skip-btn" class="hidden absolute z-20"
                                 style="bottom: 4px; right: 4px; background: #306230; color: #9bbc0f;
                                 border: 2px solid #0f380f; font-family: 'Press Start 2P', monospace;
-                                font-size: 6px; padding: 3px 8px; cursor: pointer; animation: pulse 2s ease-in-out infinite; opacity: 0.85;">
+                                font-size: clamp(9px, 2vw, 10px); padding: 3px 8px; cursor: pointer; animation: pulse 2s ease-in-out infinite; opacity: 0.85;">
                                 SKIP ►
                             </button>
                         </div>
 
                         <div class="mt-1">
                             <div id="powerup-display" class="flex gap-2 justify-center">
-                                <span id="speed-indicator" class="hidden text-xs blink" style="font-size: 6px;">!SPEED!</span>
-                                <span id="shield-indicator" class="hidden text-xs blink" style="font-size: 6px;">SHIELD</span>
-                                <span id="magnet-indicator" class="hidden text-xs blink" style="font-size: 6px;">MAGNET</span>
-                                <span id="freeze-indicator" class="hidden text-xs blink" style="font-size: 6px;">FREEZE</span>
+                                <span id="speed-indicator" class="hidden text-xs blink" style="font-size: clamp(9px, 2vw, 10px);">!SPEED!</span>
+                                <span id="shield-indicator" class="hidden text-xs blink" style="font-size: clamp(9px, 2vw, 10px);">SHIELD</span>
+                                <span id="magnet-indicator" class="hidden text-xs blink" style="font-size: clamp(9px, 2vw, 10px);">MAGNET</span>
+                                <span id="freeze-indicator" class="hidden text-xs blink" style="font-size: clamp(9px, 2vw, 10px);">FREEZE</span>
                             </div>
                         </div>
                     </div>
@@ -1180,20 +1181,20 @@
                     <div id="game-over" class="hidden absolute inset-0 flex flex-col items-center justify-center z-10 p-4" style="background: #9bbc0f;">
                         <h2 id="game-over-title" class="text-sm mb-4">GAME OVER</h2>
                         <p class="text-xs mb-2">SCORE: <span id="final-score">0</span></p>
-                        <p class="text-xs mb-2" style="font-size: 6px;">LEVEL: <span id="final-level">1</span></p>
+                        <p class="text-xs mb-2" style="font-size: clamp(9px, 2vw, 10px);">LEVEL: <span id="final-level">1</span></p>
                         <p id="new-high-score" class="hidden text-xs mb-3 blink">*NEW RECORD*</p>
                         <div class="flex flex-col gap-2">
                             <button id="play-again-btn" class="px-6 py-2 text-xs">► RETRY</button>
                             <button id="menu-btn" class="px-6 py-2 text-xs">MENU</button>
                         </div>
-                        <button id="gameover-leaderboard-btn" class="mt-3 px-4 py-1" style="font-size: 6px;">SCORES</button>
+                        <button id="gameover-leaderboard-btn" class="mt-3 px-4 py-1" style="font-size: clamp(9px, 2vw, 10px);">SCORES</button>
                     </div>
 
                     <!-- Leaderboard Overlay -->
                     <div id="leaderboard-overlay" class="hidden absolute inset-0 flex flex-col items-center z-20 p-3" style="background: #9bbc0f;">
                         <div class="flex items-center gap-2 mb-3">
                             <h2 class="text-xs">HIGH SCORES</h2>
-                            <span id="leaderboard-badge" style="font-size: 5px; color: #9bbc0f; background: #0f380f; padding: 1px 4px; border-radius: 2px;">LOCAL</span>
+                            <span id="leaderboard-badge" style="font-size: clamp(8px, 1.8vw, 9px); color: #9bbc0f; background: #0f380f; padding: 1px 4px; border-radius: 2px;">LOCAL</span>
                         </div>
                         <div id="leaderboard-list" class="w-full flex-1 overflow-y-auto mb-3 border-3 border-[#0f380f] p-2" style="background: #8bac0f; max-height: 200px;">
                             <!-- Leaderboard entries will be inserted here -->
@@ -1229,11 +1230,11 @@
                 <div class="flex gap-3 sm:gap-4">
                     <div class="flex flex-col items-center gap-1">
                         <button id="select-btn" class="menu-btn mobile-btn" aria-label="Select"></button>
-                        <span class="menu-btn-label text-xs text-gray-600" style="font-family: sans-serif; font-size: 6px;">SELECT</span>
+                        <span class="menu-btn-label text-xs text-gray-600" style="font-family: sans-serif; font-size: clamp(9px, 2vw, 10px);">SELECT</span>
                     </div>
                     <div class="flex flex-col items-center gap-1">
                         <button id="start-game-btn" class="menu-btn mobile-btn" aria-label="Start"></button>
-                        <span class="menu-btn-label text-xs text-gray-600" style="font-family: sans-serif; font-size: 6px;">START</span>
+                        <span class="menu-btn-label text-xs text-gray-600" style="font-family: sans-serif; font-size: clamp(9px, 2vw, 10px);">START</span>
                     </div>
                 </div>
                 <!-- Speaker Grille -->
@@ -1428,12 +1429,6 @@
         }
 
         // ===== PREVENT UNWANTED TOUCH BEHAVIORS =====
-        // Only prevent multi-touch (pinch zoom)
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
 
         // Prevent pull-to-refresh only on the screen area, not controls
         document.addEventListener('touchmove', (e) => {
@@ -1450,11 +1445,6 @@
             // Prevent pull-to-refresh on other areas
             e.preventDefault();
         }, { passive: false });
-
-        // Prevent iOS gesture events (pinch zoom)
-        document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
-        document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
-        document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
 
         // Prevent context menu on long press (but allow button taps)
         document.addEventListener('contextmenu', (e) => {
@@ -1473,6 +1463,8 @@
         // Example: 'https://your-project-default-rtdb.firebaseio.com'
         // Leave empty to use local-only leaderboard.
         const FIREBASE_DB_URL = 'https://maze2-36f1f-default-rtdb.firebaseio.com';
+        // Do not enable direct client writes in production. Submit scores through a trusted server.
+        const ALLOW_UNVERIFIED_FIREBASE_WRITES = false;
 
         // ===== GAME STATE =====
         const state = {
@@ -1598,11 +1590,55 @@
             return { w: 25, h: 25 };
         }
 
+        function toSafeInt(value, min, max, fallback) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return fallback;
+            return Math.min(max, Math.max(min, Math.floor(num)));
+        }
+
+        function sanitizePlayerName(name, fallback = 'Player') {
+            const base = String(name ?? '').trim();
+            const cleaned = base.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 10);
+            return cleaned || fallback;
+        }
+
+        function normalizeLeaderboardEntry(entry) {
+            if (!entry || typeof entry !== 'object') return null;
+            const score = toSafeInt(entry.score, 0, 99999, 0);
+            const level = toSafeInt(entry.level, 1, 999, 1);
+            const dateRaw = String(entry.date ?? '').replace(/[^0-9/.\-]/g, '').slice(0, 16);
+
+            return {
+                name: sanitizePlayerName(entry.name, 'Anonymous'),
+                score,
+                level,
+                date: dateRaw || new Date().toLocaleDateString()
+            };
+        }
+
+        function normalizeStats(raw) {
+            const data = raw && typeof raw === 'object' ? raw : {};
+            const fastest = Number(data.fastestLevelClear);
+            return {
+                totalGames: toSafeInt(data.totalGames, 0, 1000000, 0),
+                totalGems: toSafeInt(data.totalGems, 0, 1000000, 0),
+                totalHazardsDestroyed: toSafeInt(data.totalHazardsDestroyed, 0, 1000000, 0),
+                bestCombo: toSafeInt(data.bestCombo, 0, 999, 0),
+                fastestLevelClear: Number.isFinite(fastest) && fastest > 0 ? Math.floor(fastest) : Infinity,
+                totalTimePlayed: toSafeInt(data.totalTimePlayed, 0, 100000000, 0)
+            };
+        }
+
         // ===== LEADERBOARD =====
         function loadLeaderboard() {
             try {
                 const data = localStorage.getItem('mazeLeaderboard');
-                state.leaderboard = data ? JSON.parse(data) : [];
+                const parsed = data ? JSON.parse(data) : [];
+                state.leaderboard = (Array.isArray(parsed) ? parsed : [])
+                    .map(normalizeLeaderboardEntry)
+                    .filter(Boolean)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 20);
             } catch (e) {
                 state.leaderboard = [];
             }
@@ -1617,29 +1653,34 @@
         }
 
         function firebaseSubmitScore(entry) {
-            if (!FIREBASE_DB_URL) return;
+            if (!FIREBASE_DB_URL || !ALLOW_UNVERIFIED_FIREBASE_WRITES) return;
             fetch(FIREBASE_DB_URL + '/leaderboard.json', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(entry)
             }).catch(() => {});
         }
 
         async function firebaseLoadLeaderboard() {
             const res = await fetch(FIREBASE_DB_URL + '/leaderboard.json');
+            if (!res.ok) throw new Error('Failed to load leaderboard');
             const data = await res.json();
-            if (!data) return [];
+            if (!data || typeof data !== 'object') return [];
             return Object.values(data)
+                .map(normalizeLeaderboardEntry)
+                .filter(Boolean)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 20);
         }
 
         function addToLeaderboard(name, score, level) {
-            const entry = {
-                name: name || 'Anonymous',
+            const entry = normalizeLeaderboardEntry({
+                name: sanitizePlayerName(name, 'Anonymous'),
                 score: score,
                 level: level,
                 date: new Date().toLocaleDateString()
-            };
+            });
+            if (!entry) return;
             state.leaderboard.push(entry);
             // Sort by score descending, keep top 20
             state.leaderboard.sort((a, b) => b.score - a.score);
@@ -1650,26 +1691,46 @@
 
         function renderLeaderboard(entries) {
             const list = document.getElementById('leaderboard-list');
-            if (entries.length === 0) {
-                list.innerHTML = '<p class="text-center py-4" style="font-size: 6px; color: #0f380f;">NO SCORES YET</p>';
+            const safeEntries = (Array.isArray(entries) ? entries : [])
+                .map(normalizeLeaderboardEntry)
+                .filter(Boolean);
+
+            list.replaceChildren();
+            if (safeEntries.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'text-center py-4';
+                empty.style.fontSize = 'clamp(9px, 2vw, 10px)';
+                empty.style.color = '#0f380f';
+                empty.textContent = 'NO SCORES YET';
+                list.appendChild(empty);
                 return;
             }
 
-            let html = '<div class="space-y-1">';
-            entries.forEach((entry, index) => {
+            const container = document.createElement('div');
+            container.className = 'space-y-1';
+            const currentName = sanitizePlayerName(state.playerName, '').toUpperCase();
+            safeEntries.forEach((entry, index) => {
                 const rank = String(index + 1).padStart(2, '0');
-                const isCurrentPlayer = entry.name === state.playerName;
+                const isCurrentPlayer = entry.name.toUpperCase() === currentName;
                 const marker = isCurrentPlayer ? '>' : ' ';
                 const scoreStr = String(entry.score).padStart(5, '0');
-                html += `
-                    <div class="flex justify-between items-center" style="font-size: 6px; color: #0f380f; font-family: 'Press Start 2P', monospace;">
-                        <span>${marker}${rank}.${entry.name.substring(0, 8).toUpperCase().padEnd(8, ' ')}</span>
-                        <span>${scoreStr} L${entry.level}</span>
-                    </div>
-                `;
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center';
+                row.style.fontSize = 'clamp(9px, 2vw, 10px)';
+                row.style.color = '#0f380f';
+                row.style.fontFamily = "'Press Start 2P', monospace";
+
+                const left = document.createElement('span');
+                left.style.whiteSpace = 'pre';
+                left.textContent = `${marker}${rank}.${entry.name.toUpperCase().slice(0, 8).padEnd(8, ' ')}`;
+
+                const right = document.createElement('span');
+                right.textContent = `${scoreStr} L${entry.level}`;
+
+                row.append(left, right);
+                container.appendChild(row);
             });
-            html += '</div>';
-            list.innerHTML = html;
+            list.appendChild(container);
         }
 
         function updateLeaderboardBadge(mode) {
@@ -1686,7 +1747,7 @@
                 renderLeaderboard(state.leaderboard);
                 try {
                     const online = await firebaseLoadLeaderboard();
-                    updateLeaderboardBadge('ONLINE');
+                    updateLeaderboardBadge(ALLOW_UNVERIFIED_FIREBASE_WRITES ? 'ONLINE' : 'ONLINE R/O');
                     renderLeaderboard(online);
                 } catch (e) {
                     updateLeaderboardBadge('LOCAL');
@@ -1706,7 +1767,7 @@
         function loadStats() {
             try {
                 const data = localStorage.getItem('mazeStats');
-                if (data) Object.assign(state.stats, JSON.parse(data));
+                if (data) Object.assign(state.stats, normalizeStats(JSON.parse(data)));
             } catch(e) {}
         }
 
@@ -1719,7 +1780,7 @@
             const fastest = s.fastestLevelClear === Infinity ? '--' : s.fastestLevelClear + 's';
             const list = document.getElementById('stats-list');
             list.innerHTML = `
-                <div class="space-y-2" style="font-size: 6px; color: #0f380f; font-family: 'Press Start 2P', monospace;">
+                <div class="space-y-2" style="font-size: clamp(9px, 2vw, 10px); color: #0f380f; font-family: 'Press Start 2P', monospace;">
                     <div class="flex justify-between"><span>GAMES PLAYED</span><span>${s.totalGames}</span></div>
                     <div class="flex justify-between"><span>GEMS COLLECTED</span><span>${s.totalGems}</span></div>
                     <div class="flex justify-between"><span>FOES DESTROYED</span><span>${s.totalHazardsDestroyed}</span></div>
@@ -3279,7 +3340,13 @@
 
         // ===== INPUT =====
         function setupInput() {
+            const isEditableTarget = (target) =>
+                target instanceof Element &&
+                (target.matches('input, textarea, [contenteditable=""], [contenteditable="true"]') ||
+                 target.closest('input, textarea, [contenteditable=""], [contenteditable="true"]'));
+
             document.addEventListener('keydown', (e) => {
+                if (isEditableTarget(e.target)) return;
                 if (!state.audioCtx) initAudio();
 
                 state.keysPressed[e.code] = true;
@@ -3306,6 +3373,7 @@
             });
 
             document.addEventListener('keyup', (e) => {
+                if (isEditableTarget(e.target)) return;
                 state.keysPressed[e.code] = false;
             });
 
@@ -3754,14 +3822,15 @@
             // Check if player name is saved
             const savedName = localStorage.getItem('mazePlayerName');
             if (savedName) {
-                nameInput.value = savedName;
+                nameInput.value = sanitizePlayerName(savedName, 'Player');
             }
 
             // Track touch time for name screen START button
             let nameStartTouchTime = 0;
 
             const handleStart = () => {
-                const name = nameInput.value.trim() || 'Player';
+                const name = sanitizePlayerName(nameInput.value, 'Player');
+                nameInput.value = name;
                 state.playerName = name;
                 localStorage.setItem('mazePlayerName', name);
                 document.getElementById('player-name-display').textContent = name;
