@@ -124,12 +124,12 @@
 
         .character-logo {
             font-family: 'Press Start 2P', monospace;
-            font-size: clamp(4px, 0.9vw, 5px);
-            line-height: 1.05;
+            font-size: clamp(5px, 1.1vw, 6px);
+            line-height: 1.02;
             letter-spacing: 0;
             display: inline-block;
             text-align: left;
-            min-height: 26px;
+            min-height: 30px;
         }
 
         .character-logo-row {
@@ -165,7 +165,7 @@
         .screen-bezel {
             background: linear-gradient(145deg, #2d2d3d 0%, #1a1a2a 100%);
             border-radius: 8px;
-            padding: 12px;
+            padding: 20px 12px 12px;
             box-shadow:
                 inset 0 4px 8px rgba(0,0,0,0.5),
                 inset 0 -2px 4px rgba(255,255,255,0.1);
@@ -176,13 +176,18 @@
         .screen-bezel::before {
             content: 'DOT MATRIX WITH STEREO SOUND';
             position: absolute;
-            top: -8px;
+            top: 4px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: clamp(8px, 1.8vw, 9px);
-            color: #4a4a5a;
-            letter-spacing: 1px;
+            font-size: clamp(7px, 1.3vw, 8px);
+            color: #67677a;
+            letter-spacing: 0.9px;
             white-space: nowrap;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.18) 100%);
+            border-radius: 10px;
+            padding: 1px 8px 2px;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.1);
+            border: 1px solid rgba(0,0,0,0.18);
         }
 
         /* LCD Screen effect */
@@ -371,23 +376,53 @@
         .menu-btn {
             width: 40px;
             height: 12px;
-            background: #4a4a5a;
-            border: none;
+            background: linear-gradient(180deg, #626275 0%, #4b4b5d 60%, #3a3a4a 100%);
+            border: 1px solid #2a2a36;
             border-radius: 6px;
             box-shadow:
-                inset 0 2px 3px rgba(0,0,0,0.4),
-                0 1px 2px rgba(0,0,0,0.2);
+                inset 0 1px 1px rgba(255,255,255,0.18),
+                inset 0 -2px 3px rgba(0,0,0,0.45),
+                0 1px 0 rgba(255,255,255,0.08),
+                0 2px 3px rgba(0,0,0,0.35);
             cursor: pointer;
             transform: rotate(-25deg);
             /* Ensure touch events work */
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-btn::after {
+            content: '';
+            position: absolute;
+            inset: 2px 4px;
+            border-radius: 4px;
+            background: repeating-linear-gradient(
+                -45deg,
+                rgba(255,255,255,0.12),
+                rgba(255,255,255,0.12) 2px,
+                rgba(0,0,0,0.05) 2px,
+                rgba(0,0,0,0.05) 4px
+            );
+            opacity: 0.35;
+            pointer-events: none;
         }
 
         .menu-btn:active,
         .menu-btn.pressed {
-            box-shadow: inset 0 3px 5px rgba(0,0,0,0.5);
-            background: #3a3a4a;
+            box-shadow:
+                inset 0 2px 4px rgba(0,0,0,0.58),
+                0 1px 1px rgba(0,0,0,0.35);
+            background: linear-gradient(180deg, #434355 0%, #343445 100%);
+        }
+
+        .menu-btn-label {
+            color: #3f3f53;
+            font-family: 'Press Start 2P', monospace;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.18);
+            opacity: 0.9;
         }
 
         /* Speaker grille */
@@ -419,27 +454,53 @@
         }
 
         .screen-content button {
-            background: #306230;
+            background: linear-gradient(180deg, #4f8742 0%, #3d7035 58%, #2f5f2c 100%);
             color: #9bbc0f;
             border: 3px solid #0f380f;
             font-family: 'Press Start 2P', monospace;
             cursor: pointer;
-            transition: all 0.1s;
+            transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, filter 0.12s ease-out;
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 1px 0 rgba(15,56,15,0.8);
+            box-shadow:
+                inset 0 1px 0 rgba(155,188,15,0.35),
+                inset 0 -2px 0 rgba(15,56,15,0.55),
+                0 2px 0 #1f4a1f,
+                0 4px 6px rgba(0,0,0,0.25);
+        }
+
+        .screen-content button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                rgba(255,255,255,0.06),
+                rgba(255,255,255,0.06) 2px,
+                rgba(0,0,0,0.04) 2px,
+                rgba(0,0,0,0.04) 4px
+            );
+            pointer-events: none;
+            opacity: 0.32;
         }
 
         /* Only apply hover states on devices that support true hover (not touch) */
         @media (hover: hover) and (pointer: fine) {
             .screen-content button:hover {
-                background: #0f380f;
-                color: #9bbc0f;
+                filter: brightness(1.05);
             }
         }
 
         .screen-content button:active,
         .screen-content button.pressed {
-            transform: scale(0.95);
-            background: #0f380f;
-            color: #9bbc0f;
+            transform: translateY(1px) scale(0.97);
+            box-shadow:
+                inset 0 2px 2px rgba(0,0,0,0.34),
+                inset 0 -1px 0 rgba(155,188,15,0.18),
+                0 1px 0 #1f4a1f,
+                0 2px 4px rgba(0,0,0,0.22);
         }
 
         .screen-content input {
@@ -1242,14 +1303,14 @@
 
             <!-- Center: Start/Select -->
             <div class="center-controls flex flex-col items-center justify-center gap-2 sm:gap-4 pt-4 sm:pt-8">
-                <div class="flex gap-3 sm:gap-4">
+                    <div class="flex gap-3 sm:gap-4">
                     <div class="flex flex-col items-center gap-1">
                         <button id="select-btn" class="menu-btn mobile-btn" aria-label="Select"></button>
-                        <span class="menu-btn-label text-xs text-gray-600" style="font-family: sans-serif; font-size: clamp(9px, 2vw, 10px);">SELECT</span>
+                        <span class="menu-btn-label text-xs" style="font-size: clamp(9px, 2vw, 10px);">SELECT</span>
                     </div>
                     <div class="flex flex-col items-center gap-1">
                         <button id="start-game-btn" class="menu-btn mobile-btn" aria-label="Start"></button>
-                        <span class="menu-btn-label text-xs text-gray-600" style="font-family: sans-serif; font-size: clamp(9px, 2vw, 10px);">START</span>
+                        <span class="menu-btn-label text-xs" style="font-size: clamp(9px, 2vw, 10px);">START</span>
                     </div>
                 </div>
                 <!-- Speaker Grille -->
@@ -1496,7 +1557,8 @@
             powerups: [],
             particles: [],
 
-            character: '@',  // Pixel art character symbol
+            characterKey: 'W',
+            character: '@',  // Backward-compatible symbol used by some UI text
             characterMap: {
                 'W': '@',  // Wizard
                 'F': '&',  // Fox
@@ -3046,6 +3108,29 @@
             }
         };
 
+        const PLAYER_CHARACTER_LOGOS = {
+            W: {
+                pattern: ['  /\\   ', ' /@@\\  ', '/_--_\\ ', '\\_==_/ ', ' /__\\  '],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            },
+            F: {
+                pattern: [' /\\_/\\ ', '( & & )', ' > ^ < ', ' /___\\ ', '  / \\  '],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            },
+            R: {
+                pattern: [' [===] ', '|# # #|', '|  -  |', '| [ ] |', ' /___\\ '],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            },
+            G: {
+                pattern: [' .---. ', '| % % |', '|  o  |', '| --- |', ' \\___/ '],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            }
+        };
+
+        function getPlayerLogo(charKey = state.characterKey) {
+            return PLAYER_CHARACTER_LOGOS[charKey] || ENTITY_LOGOS.player;
+        }
+
         function escapeLogoChar(ch) {
             if (ch === '&') return '&amp;';
             if (ch === '<') return '&lt;';
@@ -3062,11 +3147,10 @@
         }
 
         function renderCharacterSelectionLogos() {
-            const playerLogo = ENTITY_LOGOS.player;
             document.querySelectorAll('#characters .character-btn').forEach(btn => {
                 const charKey = btn.dataset.char;
-                const symbol = String(state.characterMap[charKey] || '@').charAt(0);
-                const rows = playerLogo.pattern.map(row => row.replace(/@/g, () => symbol));
+                const playerLogo = getPlayerLogo(charKey);
+                const rows = playerLogo.pattern;
                 const logoEl = btn.querySelector('.character-logo');
                 if (!logoEl) return;
 
@@ -3075,6 +3159,12 @@
                     const color = ENTITY_LOGO_COLORS[colorKey] || ENTITY_LOGO_COLORS.c70;
                     return `<span class="character-logo-row" style="color:${color};">${logoRowToHtml(row)}</span>`;
                 }).join('');
+            });
+        }
+
+        function updateCharacterSelectionVisualState() {
+            document.querySelectorAll('#characters .character-btn').forEach(btn => {
+                btn.style.background = btn.dataset.char === state.characterKey ? '#306230' : '#8bac0f';
             });
         }
 
@@ -3216,12 +3306,7 @@
             ctx.fillStyle = gbColors.darkest;
             ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
 
-            // Preserve selected character by swapping the avatar eye symbol.
-            const avatarSymbol = String(state.character || '@').charAt(0);
-            const playerLogo = {
-                pattern: ENTITY_LOGOS.player.pattern.map(row => row.replace(/@/g, () => avatarSymbol)),
-                rowColors: ENTITY_LOGOS.player.rowColors
-            };
+            const playerLogo = getPlayerLogo(state.characterKey);
             drawLogoTile(player.x, player.y, playerLogo);
 
             // Speed boost effect - flashing border
@@ -3728,8 +3813,8 @@
                     btnB.addEventListener('pointerdown', handleB);
                 } else {
                     btnB.addEventListener('touchstart', handleB, { passive: false });
+                    btnB.addEventListener('click', handleB);
                 }
-                btnB.addEventListener('click', handleB);
             }
 
             // A Button - reveal pulse
@@ -3745,8 +3830,8 @@
                     btnA.addEventListener('pointerdown', handleA);
                 } else {
                     btnA.addEventListener('touchstart', handleA, { passive: false });
+                    btnA.addEventListener('click', handleA);
                 }
-                btnA.addEventListener('click', handleA);
             }
 
             // SELECT button - pause
@@ -3762,8 +3847,8 @@
                     selectBtn.addEventListener('pointerdown', handleSelect);
                 } else {
                     selectBtn.addEventListener('touchstart', handleSelect, { passive: false });
+                    selectBtn.addEventListener('click', handleSelect);
                 }
-                selectBtn.addEventListener('click', handleSelect);
             }
 
             // START button - start game or unpause
@@ -3783,8 +3868,8 @@
                     startGameBtn.addEventListener('pointerdown', handleStart);
                 } else {
                     startGameBtn.addEventListener('touchstart', handleStart, { passive: false });
+                    startGameBtn.addEventListener('click', handleStart);
                 }
-                startGameBtn.addEventListener('click', handleStart);
             }
         }
 
@@ -3934,6 +4019,7 @@
             // Initialize background music
             initBackgroundMusic();
             renderCharacterSelectionLogos();
+            updateCharacterSelectionVisualState();
 
             // Name entry screen
             const nameInput = document.getElementById('player-name-input');
@@ -4060,17 +4146,15 @@
                 });
             });
 
-            // Character selection (using symbol mapping)
+            // Character selection
             document.querySelectorAll('#characters button').forEach(btn => {
                 addTapHandler(btn, () => {
                     if (!state.audioCtx) initAudio();
                     playTone(600, 0.05, 'square', 0.02);
                     const charKey = btn.dataset.char;
+                    state.characterKey = charKey;
                     state.character = state.characterMap[charKey] || '@';
-                    document.querySelectorAll('#characters button').forEach(b => {
-                        b.style.background = '#8bac0f';
-                    });
-                    btn.style.background = '#306230';
+                    updateCharacterSelectionVisualState();
                 });
             });
 
