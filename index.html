@@ -122,6 +122,21 @@
             letter-spacing: -1px;
         }
 
+        .character-logo {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(4px, 0.9vw, 5px);
+            line-height: 1.05;
+            letter-spacing: 0;
+            display: inline-block;
+            text-align: left;
+            min-height: 26px;
+        }
+
+        .character-logo-row {
+            display: block;
+            white-space: pre;
+        }
+
         /* GameyBoy Device Styles */
         .gameboy-device {
             background: linear-gradient(145deg, #8b8b9b 0%, #6b6b7b 50%, #5a5a6a 100%);
@@ -1076,19 +1091,19 @@
                         <h3 class="text-xs mb-2">SELECT PLAYER</h3>
                         <div id="characters" class="flex gap-2 mb-3">
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="W">
-                                <span class="text-lg mb-1">@</span>
+                                <div class="character-logo mb-1"></div>
                                 <span style="font-size: clamp(8px, 1.8vw, 9px);">WIZARD</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="F">
-                                <span class="text-lg mb-1">&amp;</span>
+                                <div class="character-logo mb-1"></div>
                                 <span style="font-size: clamp(8px, 1.8vw, 9px);">FOX</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="R">
-                                <span class="text-lg mb-1">#</span>
+                                <div class="character-logo mb-1"></div>
                                 <span style="font-size: clamp(8px, 1.8vw, 9px);">ROBOT</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="G">
-                                <span class="text-lg mb-1">%</span>
+                                <div class="character-logo mb-1"></div>
                                 <span style="font-size: clamp(8px, 1.8vw, 9px);">GHOST</span>
                             </button>
                         </div>
@@ -3031,6 +3046,38 @@
             }
         };
 
+        function escapeLogoChar(ch) {
+            if (ch === '&') return '&amp;';
+            if (ch === '<') return '&lt;';
+            if (ch === '>') return '&gt;';
+            return ch;
+        }
+
+        function logoRowToHtml(row) {
+            let html = '';
+            for (const ch of row) {
+                html += ch === ' ' ? '&nbsp;' : escapeLogoChar(ch);
+            }
+            return html;
+        }
+
+        function renderCharacterSelectionLogos() {
+            const playerLogo = ENTITY_LOGOS.player;
+            document.querySelectorAll('#characters .character-btn').forEach(btn => {
+                const charKey = btn.dataset.char;
+                const symbol = String(state.characterMap[charKey] || '@').charAt(0);
+                const rows = playerLogo.pattern.map(row => row.replace(/@/g, () => symbol));
+                const logoEl = btn.querySelector('.character-logo');
+                if (!logoEl) return;
+
+                logoEl.innerHTML = rows.map((row, idx) => {
+                    const colorKey = playerLogo.rowColors[idx] || playerLogo.rowColors[playerLogo.rowColors.length - 1];
+                    const color = ENTITY_LOGO_COLORS[colorKey] || ENTITY_LOGO_COLORS.c70;
+                    return `<span class="character-logo-row" style="color:${color};">${logoRowToHtml(row)}</span>`;
+                }).join('');
+            });
+        }
+
         function drawLogoTile(tileX, tileY, logo, offsetX = 0, offsetY = 0) {
             const { ctx, tileSize } = state;
             const rows = logo.pattern;
@@ -3886,6 +3933,7 @@
 
             // Initialize background music
             initBackgroundMusic();
+            renderCharacterSelectionLogos();
 
             // Name entry screen
             const nameInput = document.getElementById('player-name-input');
