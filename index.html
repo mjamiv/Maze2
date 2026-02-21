@@ -1810,6 +1810,22 @@
             list.appendChild(container);
         }
 
+        function mergeLeaderboardEntries(...entryLists) {
+            const mergedMap = new Map();
+            for (const list of entryLists) {
+                if (!Array.isArray(list)) continue;
+                for (const raw of list) {
+                    const entry = normalizeLeaderboardEntry(raw);
+                    if (!entry) continue;
+                    const key = `${entry.name}|${entry.score}|${entry.level}|${entry.date}`;
+                    if (!mergedMap.has(key)) mergedMap.set(key, entry);
+                }
+            }
+            return Array.from(mergedMap.values())
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 20);
+        }
+
         function updateLeaderboardBadge(mode) {
             const badge = document.getElementById('leaderboard-badge');
             if (badge) badge.textContent = mode;
@@ -1825,7 +1841,8 @@
                 try {
                     const online = await firebaseLoadLeaderboard();
                     updateLeaderboardBadge(ALLOW_UNVERIFIED_FIREBASE_WRITES ? 'ONLINE' : 'ONLINE R/O');
-                    renderLeaderboard(online);
+                    const merged = mergeLeaderboardEntries(state.leaderboard, online);
+                    renderLeaderboard(merged);
                 } catch (e) {
                     updateLeaderboardBadge('LOCAL');
                     renderLeaderboard(state.leaderboard);

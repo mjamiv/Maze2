@@ -95,6 +95,9 @@ When changing entity visuals, update the logo definitions and shared renderer in
 - Local leaderboard/stats use `localStorage`.
 - Firebase URL is configured in `FIREBASE_DB_URL`.
 - `ALLOW_UNVERIFIED_FIREBASE_WRITES` is intentionally `false` by default.
+- Leaderboard display must never replace local scores with online-only data.
+- When online data is available, merge `local + online`, dedupe, sort by score desc, then render top 20.
+- In read-only online mode (`ONLINE R/O`), remote data is additive for display only; local entries remain visible.
 
 Treat remote writes as untrusted unless server-validated.
 
@@ -114,3 +117,4 @@ Primary validation is manual in browser:
 2. Verify boot/menu/game screens on desktop and mobile layout
 3. Verify movement, collisions, tutorial flow, pause/resume, and audio toggles
 4. Confirm entity logos (player/gem/hazard/enemy) render correctly at different tile sizes
+5. Save a new local high score, open `SCORES`, and confirm it still appears after online leaderboard loading completes
