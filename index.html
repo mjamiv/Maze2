@@ -2979,6 +2979,85 @@
         }
 
         // ===== RENDERING (Game Boy Style) =====
+        const ENTITY_LOGO_COLORS = {
+            c22: '#005f00',
+            c28: '#008700',
+            c70: '#5f8700'
+        };
+
+        const ENTITY_LOGOS = {
+            player: {
+                pattern: [
+                    '  ___  ',
+                    ' /   \\ ',
+                    '/ @ @ \\',
+                    '\\  -  /',
+                    '  ___/ '
+                ],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            },
+            gem: {
+                pattern: [
+                    '   *   ',
+                    '  * *  ',
+                    ' *   * ',
+                    '  * *  ',
+                    '   *   ',
+                    '  ***  '
+                ],
+                rowColors: ['c22', 'c28', 'c70', 'c70', 'c28', 'c22']
+            },
+            hazard: {
+                pattern: [
+                    ' \\   / ',
+                    '  \\ /  ',
+                    '   X   ',
+                    '  / \\  ',
+                    ' /   \\ ',
+                    ' ***** '
+                ],
+                rowColors: ['c22', 'c28', 'c70', 'c70', 'c28', 'c22']
+            },
+            enemy: {
+                pattern: [
+                    ' /^^^\\ ',
+                    '| M M |',
+                    ' \\ V / ',
+                    '  _/   ',
+                    ' /   \\ ',
+                    '/_____\\'
+                ],
+                rowColors: ['c22', 'c28', 'c70', 'c70', 'c28', 'c22']
+            }
+        };
+
+        function drawLogoTile(tileX, tileY, logo, offsetX = 0, offsetY = 0) {
+            const { ctx, tileSize } = state;
+            const rows = logo.pattern;
+            const rowCount = rows.length;
+            const colCount = Math.max(...rows.map(r => r.length));
+
+            const inset = Math.max(1, Math.floor(tileSize * 0.08));
+            const available = tileSize - inset * 2;
+            const cellSize = Math.max(1, Math.floor(Math.min(available / colCount, available / rowCount)));
+            const logoWidth = colCount * cellSize;
+            const logoHeight = rowCount * cellSize;
+
+            const startX = Math.floor(tileX * tileSize + (tileSize - logoWidth) / 2 + offsetX);
+            const startY = Math.floor(tileY * tileSize + (tileSize - logoHeight) / 2 + offsetY);
+
+            for (let row = 0; row < rowCount; row++) {
+                const colorKey = logo.rowColors[row] || logo.rowColors[logo.rowColors.length - 1];
+                ctx.fillStyle = ENTITY_LOGO_COLORS[colorKey] || ENTITY_LOGO_COLORS.c70;
+
+                for (let col = 0; col < colCount; col++) {
+                    const ch = rows[row][col];
+                    if (!ch || ch === ' ') continue;
+                    ctx.fillRect(startX + col * cellSize, startY + row * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
         function draw() {
             const { ctx, canvas, tileSize, maze, mazeWidth, mazeHeight, player, goal, hazards, collectibles, powerups, particles, gbColors } = state;
 
@@ -3019,28 +3098,22 @@
             ctx.textBaseline = 'middle';
             ctx.fillText('F', goal.x * tileSize + tileSize / 2, goal.y * tileSize + tileSize / 2);
 
-            // Draw hazards - skull/X pattern
+            // Draw hazards - styled cross/trap logo
             hazards.forEach(h => {
                 h.pulse += 0.1;
                 const flash = Math.floor(h.pulse) % 2;
                 ctx.fillStyle = flash ? gbColors.darkest : gbColors.dark;
-                ctx.fillRect(h.x * tileSize + 3, h.y * tileSize + 3, tileSize - 6, tileSize - 6);
-                // Draw X for hazard
-                ctx.fillStyle = gbColors.lightest;
-                ctx.font = `bold ${tileSize * 0.5}px 'Press Start 2P', monospace`;
-                ctx.fillText('X', h.x * tileSize + tileSize / 2, h.y * tileSize + tileSize / 2);
+                ctx.fillRect(h.x * tileSize + 1, h.y * tileSize + 1, tileSize - 2, tileSize - 2);
+                drawLogoTile(h.x, h.y, ENTITY_LOGOS.hazard);
             });
 
-            // Draw collectibles - gem/star pattern
+            // Draw collectibles - styled gem logo
             collectibles.forEach(c => {
                 c.rotation += 0.08;
                 const bob = Math.floor(c.rotation) % 2 ? 1 : -1;
                 ctx.fillStyle = gbColors.dark;
-                ctx.fillRect(c.x * tileSize + 4, c.y * tileSize + 4 + bob, tileSize - 8, tileSize - 8);
-                // Draw * for gem
-                ctx.fillStyle = gbColors.lightest;
-                ctx.font = `bold ${tileSize * 0.5}px 'Press Start 2P', monospace`;
-                ctx.fillText('*', c.x * tileSize + tileSize / 2, c.y * tileSize + tileSize / 2 + bob);
+                ctx.fillRect(c.x * tileSize + 2, c.y * tileSize + 2 + bob, tileSize - 4, tileSize - 4);
+                drawLogoTile(c.x, c.y, ENTITY_LOGOS.gem, 0, bob);
             });
 
             // Draw powerups
@@ -3058,16 +3131,12 @@
                 ctx.fillText(icon, p.x * tileSize + tileSize / 2, p.y * tileSize + tileSize / 2);
             });
 
-            // Draw enemies - flashing M
+            // Draw enemies - styled monster logo
             state.enemies.forEach(e => {
                 const flash = Math.floor(Date.now() / 200) % 2;
                 ctx.fillStyle = flash ? gbColors.darkest : gbColors.dark;
                 ctx.fillRect(e.x * tileSize + 2, e.y * tileSize + 2, tileSize - 4, tileSize - 4);
-                ctx.fillStyle = gbColors.lightest;
-                ctx.font = `bold ${tileSize * 0.5}px 'Press Start 2P', monospace`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('M', e.x * tileSize + tileSize / 2, e.y * tileSize + tileSize / 2);
+                drawLogoTile(e.x, e.y, ENTITY_LOGOS.enemy);
             });
 
             // Draw particles - simple squares
@@ -3092,7 +3161,7 @@
                 player.y = player.targetY;
             }
 
-            // Draw player - character symbol
+            // Draw player - styled avatar logo
             const px = Math.floor(player.x * tileSize);
             const py = Math.floor(player.y * tileSize);
 
@@ -3100,10 +3169,13 @@
             ctx.fillStyle = gbColors.darkest;
             ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
 
-            // Player character
-            ctx.fillStyle = gbColors.lightest;
-            ctx.font = `bold ${tileSize * 0.6}px 'Press Start 2P', monospace`;
-            ctx.fillText(state.character, px + tileSize / 2, py + tileSize / 2);
+            // Preserve selected character by swapping the avatar eye symbol.
+            const avatarSymbol = String(state.character || '@').charAt(0);
+            const playerLogo = {
+                pattern: ENTITY_LOGOS.player.pattern.map(row => row.replace(/@/g, () => avatarSymbol)),
+                rowColors: ENTITY_LOGOS.player.rowColors
+            };
+            drawLogoTile(player.x, player.y, playerLogo);
 
             // Speed boost effect - flashing border
             if (state.speedBoost) {
