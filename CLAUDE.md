@@ -15,7 +15,7 @@ No build system is used.
 
 ## Runtime Dependencies
 
-- Tailwind browser build via CDN (`@tailwindcss/browser`)
+- Local Tailwind browser runtime (`vendor/tailwindcss-browser-4.2.0.js`)
 - Google Fonts (`Press Start 2P`)
 - Optional Firebase Realtime Database endpoint for leaderboard sync
 - Local asset: `playdate.mp3`
@@ -23,6 +23,7 @@ No build system is used.
 ## File Layout
 
 - `index.html`: Entire application (HTML, CSS, JavaScript)
+- `vendor/tailwindcss-browser-4.2.0.js`: Tailwind browser runtime bundle
 - `playdate.mp3`: Background music loop
 - `README.md`: Player-facing docs
 
@@ -68,6 +69,12 @@ The game intentionally commits to retro visuals:
 - `drawLogoTile()` renders these logos on the canvas tile grid.
 
 When changing entity visuals, update the logo definitions and shared renderer instead of duplicating per-entity drawing logic.
+
+## Security Header Rule
+
+- Keep clickjacking protection in HTTP headers, not meta tags.
+- `frame-ancestors` must be sent as a response header to be enforced.
+- Runtime frame-busting JS is fallback only, not a header substitute.
 
 ## State Model
 

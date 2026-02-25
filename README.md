@@ -65,6 +65,14 @@ Mobile:
 - Optional Firebase-backed leaderboard reads
 - Procedural SFX via Web Audio API + looping background track
 
+## Security Deployment Note
+
+`frame-ancestors` cannot be enforced from a `<meta http-equiv="Content-Security-Policy">`.
+To block framing/clickjacking in production, send CSP as an HTTP response header.
+
+If your static host supports header files, use the repo `_headers` template.
+If you deploy on GitHub Pages directly, serve through a proxy/CDN that can set headers.
+
 ## Run Locally
 
 Open `index.html` in a modern browser. No build step required.
@@ -72,6 +80,7 @@ Open `index.html` in a modern browser. No build step required.
 ## Files
 
 - `index.html`: Entire app (markup, styles, logic)
+- `vendor/tailwindcss-browser-4.2.0.js`: Local Tailwind browser runtime (no CDN dependency)
 - `playdate.mp3`: Background music
 - `README.md`: Player-facing overview
 - `CLAUDE.md`: Maintainer/assistant architecture notes

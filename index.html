@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src 'self' https://maze2-36f1f-default-rtdb.firebaseio.com; img-src 'self' data:; media-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src 'self' https://maze2-36f1f-default-rtdb.firebaseio.com; img-src 'self' data:; media-src 'self'; object-src 'none'; base-uri 'self'">
+    <script>
+        // Meta CSP cannot enforce frame-ancestors. Keep a runtime fallback to block framed execution.
+        if (window.top !== window.self) {
+            document.documentElement.style.display = 'none';
+            try {
+                window.top.location = window.self.location.href;
+            } catch (e) {}
+        }
+    </script>
     <!-- PWA & Mobile App Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,7 +27,7 @@
     <title>Maze Runner - GameyBoy</title>
     <!-- Preload critical font -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" as="style">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.0/dist/index.global.js" integrity="sha384-bNsax73PC6D4xYSie+xNpMGj6fF6bgWPHOoXMLpYtrI6eZPTxNAJHmkPQAnr8atN" crossorigin="anonymous"></script>
+    <script src="vendor/tailwindcss-browser-4.2.0.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -107,6 +116,18 @@
         /* Ensure hidden class works (Tailwind fallback) */
         .hidden {
             display: none !important;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
 
         /* Screen buttons (BACK, START, PLAY, etc.) */
@@ -1078,6 +1099,8 @@
     <!-- Background Music -->
     <audio id="bg-music" src="playdate.mp3" loop preload="auto"></audio>
 
+    <main id="main-content">
+    <h1 class="sr-only">Maze Runner Pro</h1>
     <!-- GameyBoy Device Frame -->
     <div id="gameboy-container" class="gameboy-device max-w-md w-full" style="opacity: 0; transition: opacity 0.3s ease-in;">
         <!-- Brand and Power LED -->
@@ -1128,7 +1151,7 @@
                         <p class="text-xs mb-3">Hi, <span id="player-name-display">PLAYER</span>!</p>
 
                         <div class="border-3 border-[#0f380f] p-2 sm:p-3 mb-3 w-full" style="background: #8bac0f;">
-                            <h3 class="text-xs mb-2">HOW TO PLAY</h3>
+                            <h2 class="text-xs mb-2">HOW TO PLAY</h2>
                             <!-- Desktop controls -->
                             <div class="desktop-only text-xs space-y-1" style="font-size: clamp(9px, 2vw, 10px); line-height: 1.4;">
                                 <div>ARROWS/WASD = MOVE</div>
@@ -1149,7 +1172,7 @@
                             </div>
                         </div>
 
-                        <h3 class="text-xs mb-2">SELECT PLAYER</h3>
+                        <h2 class="text-xs mb-2">SELECT PLAYER</h2>
                         <div id="characters" class="flex gap-2 mb-3">
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="W">
                                 <div class="character-logo mb-1"></div>
@@ -1169,7 +1192,7 @@
                             </button>
                         </div>
 
-                        <h3 class="text-xs mb-2">DIFFICULTY</h3>
+                        <h2 class="text-xs mb-2">DIFFICULTY</h2>
                         <div id="difficulty-select" class="flex gap-2 mb-3">
                             <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: clamp(8px, 1.8vw, 9px); background: #8bac0f;" data-diff="easy">EASY</button>
                             <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: clamp(8px, 1.8vw, 9px); background: #306230; color: #9bbc0f;" data-diff="medium">MEDIUM</button>
@@ -1293,7 +1316,7 @@
         <!-- Physical Controls Area -->
         <div class="controls-area flex justify-between items-start sm:mt-4 px-2">
             <!-- D-Pad (swipe-based touch control) -->
-            <div class="dpad-container" id="dpad-swipe-area" aria-label="Directional pad">
+            <div class="dpad-container" id="dpad-swipe-area" role="group" aria-label="Directional pad">
                 <div class="dpad dpad-vertical"></div>
                 <div class="dpad dpad-horizontal"></div>
                 <div class="dpad-center" id="dpad-center-dot"></div>
@@ -1338,6 +1361,7 @@
         <!-- Mobile Controls (hidden by default, shown via JS) -->
         <div id="mobile-controls" class="hidden"></div>
     </div>
+    </main>
 
     <script>
         // ===== INDUSTRY-GRADE MOBILE SETUP =====
