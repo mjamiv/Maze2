@@ -2,7 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src 'self' https://maze2-36f1f-default-rtdb.firebaseio.com; img-src 'self' data:; media-src 'self'; object-src 'none'; base-uri 'self'">
+    <script>
+        // Meta CSP cannot enforce frame-ancestors. Keep a runtime fallback to block framed execution.
+        if (window.top !== window.self) {
+            document.documentElement.style.display = 'none';
+            try {
+                window.top.location = window.self.location.href;
+            } catch (e) {}
+        }
+    </script>
     <!-- PWA & Mobile App Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,7 +27,7 @@
     <title>Maze Runner - GameyBoy</title>
     <!-- Preload critical font -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" as="style">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="vendor/tailwindcss-browser-4.2.0.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -34,7 +44,7 @@
             --safe-area-right: 0px;
         }
 
-        /* Critical: Prevent ALL zoom and scaling behaviors */
+        /* Base interaction defaults */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
@@ -108,6 +118,18 @@
             display: none !important;
         }
 
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         /* Screen buttons (BACK, START, PLAY, etc.) */
         .screen-content button {
             touch-action: manipulation;
@@ -119,6 +141,21 @@
         .pixel-font {
             font-family: 'Press Start 2P', monospace;
             letter-spacing: -1px;
+        }
+
+        .character-logo {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(5px, 1.1vw, 6px);
+            line-height: 1.02;
+            letter-spacing: 0;
+            display: inline-block;
+            text-align: left;
+            min-height: 30px;
+        }
+
+        .character-logo-row {
+            display: block;
+            white-space: pre;
         }
 
         /* GameyBoy Device Styles */
@@ -149,7 +186,7 @@
         .screen-bezel {
             background: linear-gradient(145deg, #2d2d3d 0%, #1a1a2a 100%);
             border-radius: 8px;
-            padding: 12px;
+            padding: 20px 12px 12px;
             box-shadow:
                 inset 0 4px 8px rgba(0,0,0,0.5),
                 inset 0 -2px 4px rgba(255,255,255,0.1);
@@ -160,13 +197,18 @@
         .screen-bezel::before {
             content: 'DOT MATRIX WITH STEREO SOUND';
             position: absolute;
-            top: -8px;
+            top: 4px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 5px;
-            color: #4a4a5a;
-            letter-spacing: 1px;
+            font-size: clamp(7px, 1.3vw, 8px);
+            color: #67677a;
+            letter-spacing: 0.9px;
             white-space: nowrap;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.18) 100%);
+            border-radius: 10px;
+            padding: 1px 8px 2px;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.1);
+            border: 1px solid rgba(0,0,0,0.18);
         }
 
         /* LCD Screen effect */
@@ -355,23 +397,53 @@
         .menu-btn {
             width: 40px;
             height: 12px;
-            background: #4a4a5a;
-            border: none;
+            background: linear-gradient(180deg, #626275 0%, #4b4b5d 60%, #3a3a4a 100%);
+            border: 1px solid #2a2a36;
             border-radius: 6px;
             box-shadow:
-                inset 0 2px 3px rgba(0,0,0,0.4),
-                0 1px 2px rgba(0,0,0,0.2);
+                inset 0 1px 1px rgba(255,255,255,0.18),
+                inset 0 -2px 3px rgba(0,0,0,0.45),
+                0 1px 0 rgba(255,255,255,0.08),
+                0 2px 3px rgba(0,0,0,0.35);
             cursor: pointer;
             transform: rotate(-25deg);
             /* Ensure touch events work */
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-btn::after {
+            content: '';
+            position: absolute;
+            inset: 2px 4px;
+            border-radius: 4px;
+            background: repeating-linear-gradient(
+                -45deg,
+                rgba(255,255,255,0.12),
+                rgba(255,255,255,0.12) 2px,
+                rgba(0,0,0,0.05) 2px,
+                rgba(0,0,0,0.05) 4px
+            );
+            opacity: 0.35;
+            pointer-events: none;
         }
 
         .menu-btn:active,
         .menu-btn.pressed {
-            box-shadow: inset 0 3px 5px rgba(0,0,0,0.5);
-            background: #3a3a4a;
+            box-shadow:
+                inset 0 2px 4px rgba(0,0,0,0.58),
+                0 1px 1px rgba(0,0,0,0.35);
+            background: linear-gradient(180deg, #434355 0%, #343445 100%);
+        }
+
+        .menu-btn-label {
+            color: #3f3f53;
+            font-family: 'Press Start 2P', monospace;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.18);
+            opacity: 0.9;
         }
 
         /* Speaker grille */
@@ -403,27 +475,53 @@
         }
 
         .screen-content button {
-            background: #306230;
+            background: linear-gradient(180deg, #4f8742 0%, #3d7035 58%, #2f5f2c 100%);
             color: #9bbc0f;
             border: 3px solid #0f380f;
             font-family: 'Press Start 2P', monospace;
             cursor: pointer;
-            transition: all 0.1s;
+            transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, filter 0.12s ease-out;
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 1px 0 rgba(15,56,15,0.8);
+            box-shadow:
+                inset 0 1px 0 rgba(155,188,15,0.35),
+                inset 0 -2px 0 rgba(15,56,15,0.55),
+                0 2px 0 #1f4a1f,
+                0 4px 6px rgba(0,0,0,0.25);
+        }
+
+        .screen-content button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                rgba(255,255,255,0.06),
+                rgba(255,255,255,0.06) 2px,
+                rgba(0,0,0,0.04) 2px,
+                rgba(0,0,0,0.04) 4px
+            );
+            pointer-events: none;
+            opacity: 0.32;
         }
 
         /* Only apply hover states on devices that support true hover (not touch) */
         @media (hover: hover) and (pointer: fine) {
             .screen-content button:hover {
-                background: #0f380f;
-                color: #9bbc0f;
+                filter: brightness(1.05);
             }
         }
 
         .screen-content button:active,
         .screen-content button.pressed {
-            transform: scale(0.95);
-            background: #0f380f;
-            color: #9bbc0f;
+            transform: translateY(1px) scale(0.97);
+            box-shadow:
+                inset 0 2px 2px rgba(0,0,0,0.34),
+                inset 0 -1px 0 rgba(155,188,15,0.18),
+                0 1px 0 #1f4a1f,
+                0 2px 4px rgba(0,0,0,0.22);
         }
 
         .screen-content input {
@@ -1001,6 +1099,8 @@
     <!-- Background Music -->
     <audio id="bg-music" src="playdate.mp3" loop preload="auto"></audio>
 
+    <main id="main-content">
+    <h1 class="sr-only">Maze Runner Pro</h1>
     <!-- GameyBoy Device Frame -->
     <div id="gameboy-container" class="gameboy-device max-w-md w-full" style="opacity: 0; transition: opacity 0.3s ease-in;">
         <!-- Brand and Power LED -->
@@ -1039,8 +1139,8 @@
                         <h1 class="text-sm sm:text-base mb-1 text-center leading-relaxed">MAZE</h1>
                         <h1 class="text-sm sm:text-base mb-4 text-center leading-relaxed">RUNNER</h1>
                         <div class="w-16 h-1 bg-[#0f380f] mb-4"></div>
-                        <p class="text-xs mb-4 text-center">ENTER NAME</p>
-                        <input type="text" id="player-name-input" maxlength="10" placeholder="PLAYER"
+                        <label for="player-name-input" class="text-xs mb-4 text-center">ENTER NAME</label>
+                        <input type="text" id="player-name-input" maxlength="10" placeholder="PLAYER" autocomplete="nickname"
                             class="px-3 py-2 text-center text-xs mb-4 w-40 uppercase">
                         <button id="start-btn" class="px-6 py-2 text-xs">START</button>
                     </div>
@@ -1051,70 +1151,70 @@
                         <p class="text-xs mb-3">Hi, <span id="player-name-display">PLAYER</span>!</p>
 
                         <div class="border-3 border-[#0f380f] p-2 sm:p-3 mb-3 w-full" style="background: #8bac0f;">
-                            <h3 class="text-xs mb-2">HOW TO PLAY</h3>
+                            <h2 class="text-xs mb-2">HOW TO PLAY</h2>
                             <!-- Desktop controls -->
-                            <div class="desktop-only text-xs space-y-1" style="font-size: 6px; line-height: 1.4;">
+                            <div class="desktop-only text-xs space-y-1" style="font-size: clamp(9px, 2vw, 10px); line-height: 1.4;">
                                 <div>ARROWS/WASD = MOVE</div>
                                 <div>SPACE = ATTACK</div>
                                 <div>E = REVEAL MAP</div>
                                 <div>P/ESC = PAUSE</div>
                             </div>
                             <!-- Mobile controls -->
-                            <div class="mobile-only text-xs space-y-1" style="font-size: 6px; line-height: 1.4;">
+                            <div class="mobile-only text-xs space-y-1" style="font-size: clamp(9px, 2vw, 10px); line-height: 1.4;">
                                 <div>D-PAD = MOVE</div>
                                 <div>B BTN = ATTACK</div>
                                 <div>A BTN = REVEAL</div>
                                 <div>SELECT = PAUSE</div>
                             </div>
-                            <div class="mt-2 pt-2 border-t-2 border-[#0f380f]" style="font-size: 6px;">
+                            <div class="mt-2 pt-2 border-t-2 border-[#0f380f]" style="font-size: clamp(9px, 2vw, 10px);">
                                 <p>F=GOAL *=GEM X=HAZARD M=ENEMY</p>
                                 <p>!=SPD +=TIME S=SHLD ?=MAP</p>
                             </div>
                         </div>
 
-                        <h3 class="text-xs mb-2">SELECT PLAYER</h3>
+                        <h2 class="text-xs mb-2">SELECT PLAYER</h2>
                         <div id="characters" class="flex gap-2 mb-3">
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="W">
-                                <span class="text-lg mb-1">@</span>
-                                <span style="font-size: 5px;">WIZARD</span>
+                                <div class="character-logo mb-1"></div>
+                                <span style="font-size: clamp(8px, 1.8vw, 9px);">WIZARD</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="F">
-                                <span class="text-lg mb-1">&amp;</span>
-                                <span style="font-size: 5px;">FOX</span>
+                                <div class="character-logo mb-1"></div>
+                                <span style="font-size: clamp(8px, 1.8vw, 9px);">FOX</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="R">
-                                <span class="text-lg mb-1">#</span>
-                                <span style="font-size: 5px;">ROBOT</span>
+                                <div class="character-logo mb-1"></div>
+                                <span style="font-size: clamp(8px, 1.8vw, 9px);">ROBOT</span>
                             </button>
                             <button class="character-btn flex flex-col items-center p-2 border-3 border-[#0f380f]" style="background: #8bac0f; min-width: 50px;" data-char="G">
-                                <span class="text-lg mb-1">%</span>
-                                <span style="font-size: 5px;">GHOST</span>
+                                <div class="character-logo mb-1"></div>
+                                <span style="font-size: clamp(8px, 1.8vw, 9px);">GHOST</span>
                             </button>
                         </div>
 
-                        <h3 class="text-xs mb-2">DIFFICULTY</h3>
+                        <h2 class="text-xs mb-2">DIFFICULTY</h2>
                         <div id="difficulty-select" class="flex gap-2 mb-3">
-                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #8bac0f;" data-diff="easy">EASY</button>
-                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #306230; color: #9bbc0f;" data-diff="medium">MEDIUM</button>
-                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: 5px; background: #8bac0f;" data-diff="hard">HARD</button>
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: clamp(8px, 1.8vw, 9px); background: #8bac0f;" data-diff="easy">EASY</button>
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: clamp(8px, 1.8vw, 9px); background: #306230; color: #9bbc0f;" data-diff="medium">MEDIUM</button>
+                            <button class="diff-btn px-2 py-1 border-3 border-[#0f380f]" style="font-size: clamp(8px, 1.8vw, 9px); background: #8bac0f;" data-diff="hard">HARD</button>
                         </div>
 
                         <button id="play-btn" class="px-6 py-2 text-xs mb-3">► PLAY</button>
 
-                        <p class="text-xs mb-2" style="font-size: 6px;">HIGH SCORE: <span id="high-score">0</span></p>
+                        <p class="text-xs mb-2" style="font-size: clamp(9px, 2vw, 10px);">HIGH SCORE: <span id="high-score">0</span></p>
 
                         <div class="flex gap-2 flex-wrap justify-center">
-                            <button id="music-toggle" class="px-3 py-1" style="font-size: 6px;">
+                            <button id="music-toggle" class="px-3 py-1" style="font-size: clamp(9px, 2vw, 10px);">
                                 <span id="music-icon">♪</span>
                                 <span id="music-text">ON</span>
                             </button>
-                            <button id="sfx-toggle" class="px-3 py-1" style="font-size: 6px;">
+                            <button id="sfx-toggle" class="px-3 py-1" style="font-size: clamp(9px, 2vw, 10px);">
                                 SFX <span id="sfx-text">ON</span>
                             </button>
-                            <button id="leaderboard-btn" class="px-3 py-1" style="font-size: 6px;">
+                            <button id="leaderboard-btn" class="px-3 py-1" style="font-size: clamp(9px, 2vw, 10px);">
                                 SCORES
                             </button>
-                            <button id="stats-btn" class="px-3 py-1" style="font-size: 6px;">
+                            <button id="stats-btn" class="px-3 py-1" style="font-size: clamp(9px, 2vw, 10px);">
                                 STATS
                             </button>
                         </div>
@@ -1123,13 +1223,13 @@
                     <!-- Game Screen -->
                     <div id="game-screen" class="hidden flex flex-col items-center h-full">
                         <!-- HUD -->
-                        <div class="flex justify-between items-center w-full mb-1 text-xs" style="font-size: 7px;">
+                        <div class="flex justify-between items-center w-full mb-1 text-xs" style="font-size: clamp(10px, 2.2vw, 11px);">
                             <div class="flex gap-2">
                                 <span id="score">SC:0000</span>
                                 <span id="combo" class="hidden blink">x2!</span>
                             </div>
                             <div class="flex gap-2">
-                                <span id="reveal-uses" style="font-size: 6px;">A:1</span>
+                                <span id="reveal-uses" style="font-size: clamp(9px, 2vw, 10px);">A:1</span>
                                 <span id="level">LV:01</span>
                                 <span id="timer">T:60</span>
                             </div>
@@ -1147,24 +1247,24 @@
                             <div id="level-complete" class="hidden absolute inset-0 flex flex-col items-center justify-center p-4" style="background: rgba(155,188,15,0.95);">
                                 <h2 class="text-sm mb-2">LEVEL CLEAR!</h2>
                                 <p class="text-xs mb-1">BONUS: +<span id="level-bonus">0</span></p>
-                                <p class="text-xs" style="font-size: 6px;">NEXT: <span id="next-level-timer">3</span></p>
+                                <p class="text-xs" style="font-size: clamp(9px, 2vw, 10px);">NEXT: <span id="next-level-timer">3</span></p>
                             </div>
 
                             <!-- Tutorial Skip Button -->
                             <button id="tutorial-skip-btn" class="hidden absolute z-20"
                                 style="bottom: 4px; right: 4px; background: #306230; color: #9bbc0f;
                                 border: 2px solid #0f380f; font-family: 'Press Start 2P', monospace;
-                                font-size: 6px; padding: 3px 8px; cursor: pointer; animation: pulse 2s ease-in-out infinite; opacity: 0.85;">
+                                font-size: clamp(9px, 2vw, 10px); padding: 3px 8px; cursor: pointer; animation: pulse 2s ease-in-out infinite; opacity: 0.85;">
                                 SKIP ►
                             </button>
                         </div>
 
                         <div class="mt-1">
                             <div id="powerup-display" class="flex gap-2 justify-center">
-                                <span id="speed-indicator" class="hidden text-xs blink" style="font-size: 6px;">!SPEED!</span>
-                                <span id="shield-indicator" class="hidden text-xs blink" style="font-size: 6px;">SHIELD</span>
-                                <span id="magnet-indicator" class="hidden text-xs blink" style="font-size: 6px;">MAGNET</span>
-                                <span id="freeze-indicator" class="hidden text-xs blink" style="font-size: 6px;">FREEZE</span>
+                                <span id="speed-indicator" class="hidden text-xs blink" style="font-size: clamp(9px, 2vw, 10px);">!SPEED!</span>
+                                <span id="shield-indicator" class="hidden text-xs blink" style="font-size: clamp(9px, 2vw, 10px);">SHIELD</span>
+                                <span id="magnet-indicator" class="hidden text-xs blink" style="font-size: clamp(9px, 2vw, 10px);">MAGNET</span>
+                                <span id="freeze-indicator" class="hidden text-xs blink" style="font-size: clamp(9px, 2vw, 10px);">FREEZE</span>
                             </div>
                         </div>
                     </div>
@@ -1180,20 +1280,20 @@
                     <div id="game-over" class="hidden absolute inset-0 flex flex-col items-center justify-center z-10 p-4" style="background: #9bbc0f;">
                         <h2 id="game-over-title" class="text-sm mb-4">GAME OVER</h2>
                         <p class="text-xs mb-2">SCORE: <span id="final-score">0</span></p>
-                        <p class="text-xs mb-2" style="font-size: 6px;">LEVEL: <span id="final-level">1</span></p>
+                        <p class="text-xs mb-2" style="font-size: clamp(9px, 2vw, 10px);">LEVEL: <span id="final-level">1</span></p>
                         <p id="new-high-score" class="hidden text-xs mb-3 blink">*NEW RECORD*</p>
                         <div class="flex flex-col gap-2">
                             <button id="play-again-btn" class="px-6 py-2 text-xs">► RETRY</button>
                             <button id="menu-btn" class="px-6 py-2 text-xs">MENU</button>
                         </div>
-                        <button id="gameover-leaderboard-btn" class="mt-3 px-4 py-1" style="font-size: 6px;">SCORES</button>
+                        <button id="gameover-leaderboard-btn" class="mt-3 px-4 py-1" style="font-size: clamp(9px, 2vw, 10px);">SCORES</button>
                     </div>
 
                     <!-- Leaderboard Overlay -->
                     <div id="leaderboard-overlay" class="hidden absolute inset-0 flex flex-col items-center z-20 p-3" style="background: #9bbc0f;">
                         <div class="flex items-center gap-2 mb-3">
                             <h2 class="text-xs">HIGH SCORES</h2>
-                            <span id="leaderboard-badge" style="font-size: 5px; color: #9bbc0f; background: #0f380f; padding: 1px 4px; border-radius: 2px;">LOCAL</span>
+                            <span id="leaderboard-badge" style="font-size: clamp(8px, 1.8vw, 9px); color: #9bbc0f; background: #0f380f; padding: 1px 4px; border-radius: 2px;">LOCAL</span>
                         </div>
                         <div id="leaderboard-list" class="w-full flex-1 overflow-y-auto mb-3 border-3 border-[#0f380f] p-2" style="background: #8bac0f; max-height: 200px;">
                             <!-- Leaderboard entries will be inserted here -->
@@ -1216,7 +1316,7 @@
         <!-- Physical Controls Area -->
         <div class="controls-area flex justify-between items-start sm:mt-4 px-2">
             <!-- D-Pad (swipe-based touch control) -->
-            <div class="dpad-container" id="dpad-swipe-area" aria-label="Directional pad">
+            <div class="dpad-container" id="dpad-swipe-area" role="group" aria-label="Directional pad">
                 <div class="dpad dpad-vertical"></div>
                 <div class="dpad dpad-horizontal"></div>
                 <div class="dpad-center" id="dpad-center-dot"></div>
@@ -1226,14 +1326,14 @@
 
             <!-- Center: Start/Select -->
             <div class="center-controls flex flex-col items-center justify-center gap-2 sm:gap-4 pt-4 sm:pt-8">
-                <div class="flex gap-3 sm:gap-4">
+                    <div class="flex gap-3 sm:gap-4">
                     <div class="flex flex-col items-center gap-1">
                         <button id="select-btn" class="menu-btn mobile-btn" aria-label="Select"></button>
-                        <span class="menu-btn-label text-xs text-gray-600" style="font-family: sans-serif; font-size: 6px;">SELECT</span>
+                        <span class="menu-btn-label text-xs" style="font-size: clamp(9px, 2vw, 10px);">SELECT</span>
                     </div>
                     <div class="flex flex-col items-center gap-1">
                         <button id="start-game-btn" class="menu-btn mobile-btn" aria-label="Start"></button>
-                        <span class="menu-btn-label text-xs text-gray-600" style="font-family: sans-serif; font-size: 6px;">START</span>
+                        <span class="menu-btn-label text-xs" style="font-size: clamp(9px, 2vw, 10px);">START</span>
                     </div>
                 </div>
                 <!-- Speaker Grille -->
@@ -1261,6 +1361,7 @@
         <!-- Mobile Controls (hidden by default, shown via JS) -->
         <div id="mobile-controls" class="hidden"></div>
     </div>
+    </main>
 
     <script>
         // ===== INDUSTRY-GRADE MOBILE SETUP =====
@@ -1428,12 +1529,6 @@
         }
 
         // ===== PREVENT UNWANTED TOUCH BEHAVIORS =====
-        // Only prevent multi-touch (pinch zoom)
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
 
         // Prevent pull-to-refresh only on the screen area, not controls
         document.addEventListener('touchmove', (e) => {
@@ -1450,11 +1545,6 @@
             // Prevent pull-to-refresh on other areas
             e.preventDefault();
         }, { passive: false });
-
-        // Prevent iOS gesture events (pinch zoom)
-        document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
-        document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
-        document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
 
         // Prevent context menu on long press (but allow button taps)
         document.addEventListener('contextmenu', (e) => {
@@ -1473,6 +1563,8 @@
         // Example: 'https://your-project-default-rtdb.firebaseio.com'
         // Leave empty to use local-only leaderboard.
         const FIREBASE_DB_URL = 'https://maze2-36f1f-default-rtdb.firebaseio.com';
+        // Do not enable direct client writes in production. Submit scores through a trusted server.
+        const ALLOW_UNVERIFIED_FIREBASE_WRITES = false;
 
         // ===== GAME STATE =====
         const state = {
@@ -1489,7 +1581,8 @@
             powerups: [],
             particles: [],
 
-            character: '@',  // Pixel art character symbol
+            characterKey: 'W',
+            character: '@',  // Backward-compatible symbol used by some UI text
             characterMap: {
                 'W': '@',  // Wizard
                 'F': '&',  // Fox
@@ -1598,11 +1691,55 @@
             return { w: 25, h: 25 };
         }
 
+        function toSafeInt(value, min, max, fallback) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return fallback;
+            return Math.min(max, Math.max(min, Math.floor(num)));
+        }
+
+        function sanitizePlayerName(name, fallback = 'Player') {
+            const base = String(name ?? '').trim();
+            const cleaned = base.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 10);
+            return cleaned || fallback;
+        }
+
+        function normalizeLeaderboardEntry(entry) {
+            if (!entry || typeof entry !== 'object') return null;
+            const score = toSafeInt(entry.score, 0, 99999, 0);
+            const level = toSafeInt(entry.level, 1, 999, 1);
+            const dateRaw = String(entry.date ?? '').replace(/[^0-9/.\-]/g, '').slice(0, 16);
+
+            return {
+                name: sanitizePlayerName(entry.name, 'Anonymous'),
+                score,
+                level,
+                date: dateRaw || new Date().toLocaleDateString()
+            };
+        }
+
+        function normalizeStats(raw) {
+            const data = raw && typeof raw === 'object' ? raw : {};
+            const fastest = Number(data.fastestLevelClear);
+            return {
+                totalGames: toSafeInt(data.totalGames, 0, 1000000, 0),
+                totalGems: toSafeInt(data.totalGems, 0, 1000000, 0),
+                totalHazardsDestroyed: toSafeInt(data.totalHazardsDestroyed, 0, 1000000, 0),
+                bestCombo: toSafeInt(data.bestCombo, 0, 999, 0),
+                fastestLevelClear: Number.isFinite(fastest) && fastest > 0 ? Math.floor(fastest) : Infinity,
+                totalTimePlayed: toSafeInt(data.totalTimePlayed, 0, 100000000, 0)
+            };
+        }
+
         // ===== LEADERBOARD =====
         function loadLeaderboard() {
             try {
                 const data = localStorage.getItem('mazeLeaderboard');
-                state.leaderboard = data ? JSON.parse(data) : [];
+                const parsed = data ? JSON.parse(data) : [];
+                state.leaderboard = (Array.isArray(parsed) ? parsed : [])
+                    .map(normalizeLeaderboardEntry)
+                    .filter(Boolean)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 20);
             } catch (e) {
                 state.leaderboard = [];
             }
@@ -1617,29 +1754,34 @@
         }
 
         function firebaseSubmitScore(entry) {
-            if (!FIREBASE_DB_URL) return;
+            if (!FIREBASE_DB_URL || !ALLOW_UNVERIFIED_FIREBASE_WRITES) return;
             fetch(FIREBASE_DB_URL + '/leaderboard.json', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(entry)
             }).catch(() => {});
         }
 
         async function firebaseLoadLeaderboard() {
             const res = await fetch(FIREBASE_DB_URL + '/leaderboard.json');
+            if (!res.ok) throw new Error('Failed to load leaderboard');
             const data = await res.json();
-            if (!data) return [];
+            if (!data || typeof data !== 'object') return [];
             return Object.values(data)
+                .map(normalizeLeaderboardEntry)
+                .filter(Boolean)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 20);
         }
 
         function addToLeaderboard(name, score, level) {
-            const entry = {
-                name: name || 'Anonymous',
+            const entry = normalizeLeaderboardEntry({
+                name: sanitizePlayerName(name, 'Anonymous'),
                 score: score,
                 level: level,
                 date: new Date().toLocaleDateString()
-            };
+            });
+            if (!entry) return;
             state.leaderboard.push(entry);
             // Sort by score descending, keep top 20
             state.leaderboard.sort((a, b) => b.score - a.score);
@@ -1650,26 +1792,62 @@
 
         function renderLeaderboard(entries) {
             const list = document.getElementById('leaderboard-list');
-            if (entries.length === 0) {
-                list.innerHTML = '<p class="text-center py-4" style="font-size: 6px; color: #0f380f;">NO SCORES YET</p>';
+            const safeEntries = (Array.isArray(entries) ? entries : [])
+                .map(normalizeLeaderboardEntry)
+                .filter(Boolean);
+
+            list.replaceChildren();
+            if (safeEntries.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'text-center py-4';
+                empty.style.fontSize = 'clamp(9px, 2vw, 10px)';
+                empty.style.color = '#0f380f';
+                empty.textContent = 'NO SCORES YET';
+                list.appendChild(empty);
                 return;
             }
 
-            let html = '<div class="space-y-1">';
-            entries.forEach((entry, index) => {
+            const container = document.createElement('div');
+            container.className = 'space-y-1';
+            const currentName = sanitizePlayerName(state.playerName, '').toUpperCase();
+            safeEntries.forEach((entry, index) => {
                 const rank = String(index + 1).padStart(2, '0');
-                const isCurrentPlayer = entry.name === state.playerName;
+                const isCurrentPlayer = entry.name.toUpperCase() === currentName;
                 const marker = isCurrentPlayer ? '>' : ' ';
                 const scoreStr = String(entry.score).padStart(5, '0');
-                html += `
-                    <div class="flex justify-between items-center" style="font-size: 6px; color: #0f380f; font-family: 'Press Start 2P', monospace;">
-                        <span>${marker}${rank}.${entry.name.substring(0, 8).toUpperCase().padEnd(8, ' ')}</span>
-                        <span>${scoreStr} L${entry.level}</span>
-                    </div>
-                `;
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center';
+                row.style.fontSize = 'clamp(9px, 2vw, 10px)';
+                row.style.color = '#0f380f';
+                row.style.fontFamily = "'Press Start 2P', monospace";
+
+                const left = document.createElement('span');
+                left.style.whiteSpace = 'pre';
+                left.textContent = `${marker}${rank}.${entry.name.toUpperCase().slice(0, 8).padEnd(8, ' ')}`;
+
+                const right = document.createElement('span');
+                right.textContent = `${scoreStr} L${entry.level}`;
+
+                row.append(left, right);
+                container.appendChild(row);
             });
-            html += '</div>';
-            list.innerHTML = html;
+            list.appendChild(container);
+        }
+
+        function mergeLeaderboardEntries(...entryLists) {
+            const mergedMap = new Map();
+            for (const list of entryLists) {
+                if (!Array.isArray(list)) continue;
+                for (const raw of list) {
+                    const entry = normalizeLeaderboardEntry(raw);
+                    if (!entry) continue;
+                    const key = `${entry.name}|${entry.score}|${entry.level}|${entry.date}`;
+                    if (!mergedMap.has(key)) mergedMap.set(key, entry);
+                }
+            }
+            return Array.from(mergedMap.values())
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 20);
         }
 
         function updateLeaderboardBadge(mode) {
@@ -1686,8 +1864,9 @@
                 renderLeaderboard(state.leaderboard);
                 try {
                     const online = await firebaseLoadLeaderboard();
-                    updateLeaderboardBadge('ONLINE');
-                    renderLeaderboard(online);
+                    updateLeaderboardBadge(ALLOW_UNVERIFIED_FIREBASE_WRITES ? 'ONLINE' : 'ONLINE R/O');
+                    const merged = mergeLeaderboardEntries(state.leaderboard, online);
+                    renderLeaderboard(merged);
                 } catch (e) {
                     updateLeaderboardBadge('LOCAL');
                     renderLeaderboard(state.leaderboard);
@@ -1706,7 +1885,7 @@
         function loadStats() {
             try {
                 const data = localStorage.getItem('mazeStats');
-                if (data) Object.assign(state.stats, JSON.parse(data));
+                if (data) Object.assign(state.stats, normalizeStats(JSON.parse(data)));
             } catch(e) {}
         }
 
@@ -1719,7 +1898,7 @@
             const fastest = s.fastestLevelClear === Infinity ? '--' : s.fastestLevelClear + 's';
             const list = document.getElementById('stats-list');
             list.innerHTML = `
-                <div class="space-y-2" style="font-size: 6px; color: #0f380f; font-family: 'Press Start 2P', monospace;">
+                <div class="space-y-2" style="font-size: clamp(9px, 2vw, 10px); color: #0f380f; font-family: 'Press Start 2P', monospace;">
                     <div class="flex justify-between"><span>GAMES PLAYED</span><span>${s.totalGames}</span></div>
                     <div class="flex justify-between"><span>GEMS COLLECTED</span><span>${s.totalGems}</span></div>
                     <div class="flex justify-between"><span>FOES DESTROYED</span><span>${s.totalHazardsDestroyed}</span></div>
@@ -2918,6 +3097,145 @@
         }
 
         // ===== RENDERING (Game Boy Style) =====
+        const ENTITY_LOGO_COLORS = {
+            c22: '#005f00',
+            c28: '#008700',
+            c70: '#5f8700'
+        };
+
+        const ENTITY_LOGOS = {
+            player: {
+                pattern: [
+                    '  ___  ',
+                    ' /   \\ ',
+                    '/ @ @ \\',
+                    '\\  -  /',
+                    '  ___/ '
+                ],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            },
+            gem: {
+                pattern: [
+                    '   *   ',
+                    '  * *  ',
+                    ' *   * ',
+                    '  * *  ',
+                    '   *   ',
+                    '  ***  '
+                ],
+                rowColors: ['c22', 'c28', 'c70', 'c70', 'c28', 'c22']
+            },
+            hazard: {
+                pattern: [
+                    ' \\   / ',
+                    '  \\ /  ',
+                    '   X   ',
+                    '  / \\  ',
+                    ' /   \\ ',
+                    ' ***** '
+                ],
+                rowColors: ['c22', 'c28', 'c70', 'c70', 'c28', 'c22']
+            },
+            enemy: {
+                pattern: [
+                    ' /^^^\\ ',
+                    '| M M |',
+                    ' \\ V / ',
+                    '  _/   ',
+                    ' /   \\ ',
+                    '/_____\\'
+                ],
+                rowColors: ['c22', 'c28', 'c70', 'c70', 'c28', 'c22']
+            }
+        };
+
+        const PLAYER_CHARACTER_LOGOS = {
+            W: {
+                pattern: ['  /\\   ', ' /@@\\  ', '/_--_\\ ', '\\_==_/ ', ' /__\\  '],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            },
+            F: {
+                pattern: [' /\\_/\\ ', '( & & )', ' > ^ < ', ' /___\\ ', '  / \\  '],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            },
+            R: {
+                pattern: [' [===] ', '|# # #|', '|  -  |', '| [ ] |', ' /___\\ '],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            },
+            G: {
+                pattern: [' .---. ', '| % % |', '|  o  |', '| --- |', ' \\___/ '],
+                rowColors: ['c22', 'c28', 'c70', 'c28', 'c22']
+            }
+        };
+
+        function getPlayerLogo(charKey = state.characterKey) {
+            return PLAYER_CHARACTER_LOGOS[charKey] || ENTITY_LOGOS.player;
+        }
+
+        function escapeLogoChar(ch) {
+            if (ch === '&') return '&amp;';
+            if (ch === '<') return '&lt;';
+            if (ch === '>') return '&gt;';
+            return ch;
+        }
+
+        function logoRowToHtml(row) {
+            let html = '';
+            for (const ch of row) {
+                html += ch === ' ' ? '&nbsp;' : escapeLogoChar(ch);
+            }
+            return html;
+        }
+
+        function renderCharacterSelectionLogos() {
+            document.querySelectorAll('#characters .character-btn').forEach(btn => {
+                const charKey = btn.dataset.char;
+                const playerLogo = getPlayerLogo(charKey);
+                const rows = playerLogo.pattern;
+                const logoEl = btn.querySelector('.character-logo');
+                if (!logoEl) return;
+
+                logoEl.innerHTML = rows.map((row, idx) => {
+                    const colorKey = playerLogo.rowColors[idx] || playerLogo.rowColors[playerLogo.rowColors.length - 1];
+                    const color = ENTITY_LOGO_COLORS[colorKey] || ENTITY_LOGO_COLORS.c70;
+                    return `<span class="character-logo-row" style="color:${color};">${logoRowToHtml(row)}</span>`;
+                }).join('');
+            });
+        }
+
+        function updateCharacterSelectionVisualState() {
+            document.querySelectorAll('#characters .character-btn').forEach(btn => {
+                btn.style.background = btn.dataset.char === state.characterKey ? '#306230' : '#8bac0f';
+            });
+        }
+
+        function drawLogoTile(tileX, tileY, logo, offsetX = 0, offsetY = 0) {
+            const { ctx, tileSize } = state;
+            const rows = logo.pattern;
+            const rowCount = rows.length;
+            const colCount = Math.max(...rows.map(r => r.length));
+
+            const inset = Math.max(1, Math.floor(tileSize * 0.08));
+            const available = tileSize - inset * 2;
+            const cellSize = Math.max(1, Math.floor(Math.min(available / colCount, available / rowCount)));
+            const logoWidth = colCount * cellSize;
+            const logoHeight = rowCount * cellSize;
+
+            const startX = Math.floor(tileX * tileSize + (tileSize - logoWidth) / 2 + offsetX);
+            const startY = Math.floor(tileY * tileSize + (tileSize - logoHeight) / 2 + offsetY);
+
+            for (let row = 0; row < rowCount; row++) {
+                const colorKey = logo.rowColors[row] || logo.rowColors[logo.rowColors.length - 1];
+                ctx.fillStyle = ENTITY_LOGO_COLORS[colorKey] || ENTITY_LOGO_COLORS.c70;
+
+                for (let col = 0; col < colCount; col++) {
+                    const ch = rows[row][col];
+                    if (!ch || ch === ' ') continue;
+                    ctx.fillRect(startX + col * cellSize, startY + row * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
         function draw() {
             const { ctx, canvas, tileSize, maze, mazeWidth, mazeHeight, player, goal, hazards, collectibles, powerups, particles, gbColors } = state;
 
@@ -2958,28 +3276,22 @@
             ctx.textBaseline = 'middle';
             ctx.fillText('F', goal.x * tileSize + tileSize / 2, goal.y * tileSize + tileSize / 2);
 
-            // Draw hazards - skull/X pattern
+            // Draw hazards - styled cross/trap logo
             hazards.forEach(h => {
                 h.pulse += 0.1;
                 const flash = Math.floor(h.pulse) % 2;
                 ctx.fillStyle = flash ? gbColors.darkest : gbColors.dark;
-                ctx.fillRect(h.x * tileSize + 3, h.y * tileSize + 3, tileSize - 6, tileSize - 6);
-                // Draw X for hazard
-                ctx.fillStyle = gbColors.lightest;
-                ctx.font = `bold ${tileSize * 0.5}px 'Press Start 2P', monospace`;
-                ctx.fillText('X', h.x * tileSize + tileSize / 2, h.y * tileSize + tileSize / 2);
+                ctx.fillRect(h.x * tileSize + 1, h.y * tileSize + 1, tileSize - 2, tileSize - 2);
+                drawLogoTile(h.x, h.y, ENTITY_LOGOS.hazard);
             });
 
-            // Draw collectibles - gem/star pattern
+            // Draw collectibles - styled gem logo
             collectibles.forEach(c => {
                 c.rotation += 0.08;
                 const bob = Math.floor(c.rotation) % 2 ? 1 : -1;
                 ctx.fillStyle = gbColors.dark;
-                ctx.fillRect(c.x * tileSize + 4, c.y * tileSize + 4 + bob, tileSize - 8, tileSize - 8);
-                // Draw * for gem
-                ctx.fillStyle = gbColors.lightest;
-                ctx.font = `bold ${tileSize * 0.5}px 'Press Start 2P', monospace`;
-                ctx.fillText('*', c.x * tileSize + tileSize / 2, c.y * tileSize + tileSize / 2 + bob);
+                ctx.fillRect(c.x * tileSize + 2, c.y * tileSize + 2 + bob, tileSize - 4, tileSize - 4);
+                drawLogoTile(c.x, c.y, ENTITY_LOGOS.gem, 0, bob);
             });
 
             // Draw powerups
@@ -2997,16 +3309,12 @@
                 ctx.fillText(icon, p.x * tileSize + tileSize / 2, p.y * tileSize + tileSize / 2);
             });
 
-            // Draw enemies - flashing M
+            // Draw enemies - styled monster logo
             state.enemies.forEach(e => {
                 const flash = Math.floor(Date.now() / 200) % 2;
                 ctx.fillStyle = flash ? gbColors.darkest : gbColors.dark;
                 ctx.fillRect(e.x * tileSize + 2, e.y * tileSize + 2, tileSize - 4, tileSize - 4);
-                ctx.fillStyle = gbColors.lightest;
-                ctx.font = `bold ${tileSize * 0.5}px 'Press Start 2P', monospace`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('M', e.x * tileSize + tileSize / 2, e.y * tileSize + tileSize / 2);
+                drawLogoTile(e.x, e.y, ENTITY_LOGOS.enemy);
             });
 
             // Draw particles - simple squares
@@ -3031,7 +3339,7 @@
                 player.y = player.targetY;
             }
 
-            // Draw player - character symbol
+            // Draw player - styled avatar logo
             const px = Math.floor(player.x * tileSize);
             const py = Math.floor(player.y * tileSize);
 
@@ -3039,10 +3347,8 @@
             ctx.fillStyle = gbColors.darkest;
             ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
 
-            // Player character
-            ctx.fillStyle = gbColors.lightest;
-            ctx.font = `bold ${tileSize * 0.6}px 'Press Start 2P', monospace`;
-            ctx.fillText(state.character, px + tileSize / 2, py + tileSize / 2);
+            const playerLogo = getPlayerLogo(state.characterKey);
+            drawLogoTile(player.x, player.y, playerLogo);
 
             // Speed boost effect - flashing border
             if (state.speedBoost) {
@@ -3279,7 +3585,13 @@
 
         // ===== INPUT =====
         function setupInput() {
+            const isEditableTarget = (target) =>
+                target instanceof Element &&
+                (target.matches('input, textarea, [contenteditable=""], [contenteditable="true"]') ||
+                 target.closest('input, textarea, [contenteditable=""], [contenteditable="true"]'));
+
             document.addEventListener('keydown', (e) => {
+                if (isEditableTarget(e.target)) return;
                 if (!state.audioCtx) initAudio();
 
                 state.keysPressed[e.code] = true;
@@ -3306,6 +3618,7 @@
             });
 
             document.addEventListener('keyup', (e) => {
+                if (isEditableTarget(e.target)) return;
                 state.keysPressed[e.code] = false;
             });
 
@@ -3541,8 +3854,8 @@
                     btnB.addEventListener('pointerdown', handleB);
                 } else {
                     btnB.addEventListener('touchstart', handleB, { passive: false });
+                    btnB.addEventListener('click', handleB);
                 }
-                btnB.addEventListener('click', handleB);
             }
 
             // A Button - reveal pulse
@@ -3558,8 +3871,8 @@
                     btnA.addEventListener('pointerdown', handleA);
                 } else {
                     btnA.addEventListener('touchstart', handleA, { passive: false });
+                    btnA.addEventListener('click', handleA);
                 }
-                btnA.addEventListener('click', handleA);
             }
 
             // SELECT button - pause
@@ -3575,8 +3888,8 @@
                     selectBtn.addEventListener('pointerdown', handleSelect);
                 } else {
                     selectBtn.addEventListener('touchstart', handleSelect, { passive: false });
+                    selectBtn.addEventListener('click', handleSelect);
                 }
-                selectBtn.addEventListener('click', handleSelect);
             }
 
             // START button - start game or unpause
@@ -3596,8 +3909,8 @@
                     startGameBtn.addEventListener('pointerdown', handleStart);
                 } else {
                     startGameBtn.addEventListener('touchstart', handleStart, { passive: false });
+                    startGameBtn.addEventListener('click', handleStart);
                 }
-                startGameBtn.addEventListener('click', handleStart);
             }
         }
 
@@ -3746,6 +4059,8 @@
 
             // Initialize background music
             initBackgroundMusic();
+            renderCharacterSelectionLogos();
+            updateCharacterSelectionVisualState();
 
             // Name entry screen
             const nameInput = document.getElementById('player-name-input');
@@ -3754,14 +4069,15 @@
             // Check if player name is saved
             const savedName = localStorage.getItem('mazePlayerName');
             if (savedName) {
-                nameInput.value = savedName;
+                nameInput.value = sanitizePlayerName(savedName, 'Player');
             }
 
             // Track touch time for name screen START button
             let nameStartTouchTime = 0;
 
             const handleStart = () => {
-                const name = nameInput.value.trim() || 'Player';
+                const name = sanitizePlayerName(nameInput.value, 'Player');
+                nameInput.value = name;
                 state.playerName = name;
                 localStorage.setItem('mazePlayerName', name);
                 document.getElementById('player-name-display').textContent = name;
@@ -3871,17 +4187,15 @@
                 });
             });
 
-            // Character selection (using symbol mapping)
+            // Character selection
             document.querySelectorAll('#characters button').forEach(btn => {
                 addTapHandler(btn, () => {
                     if (!state.audioCtx) initAudio();
                     playTone(600, 0.05, 'square', 0.02);
                     const charKey = btn.dataset.char;
+                    state.characterKey = charKey;
                     state.character = state.characterMap[charKey] || '@';
-                    document.querySelectorAll('#characters button').forEach(b => {
-                        b.style.background = '#8bac0f';
-                    });
-                    btn.style.background = '#306230';
+                    updateCharacterSelectionVisualState();
                 });
             });
 
