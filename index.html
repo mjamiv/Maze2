@@ -1612,6 +1612,11 @@
             audioCtx: null,
 
             bgMusic: null,
+            bgMusicSource: null,
+            bgMusicGain: null,
+            bgMusicCompressor: null,
+            bgMusicLimiter: null,
+            bgMusicNodeReady: false,
             musicEnabled: true,
             musicStarted: false,
 
@@ -1920,6 +1925,7 @@
 
         // ===== AUDIO =====
         function initAudio() {
+            if (state.audioCtx) return;
             state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
             // Master gain → compressor → destination
@@ -1936,6 +1942,9 @@
 
             state.masterGain.connect(state.compressor);
             state.compressor.connect(state.audioCtx.destination);
+
+            // Background music has its own dynamics chain.
+            setupBackgroundMusicNormalizer();
         }
 
         function playTone(freq, duration, type = 'sine', volume = 0.04) {
@@ -1974,13 +1983,74 @@
         }
 
         // ===== BACKGROUND MUSIC =====
+        function dbToGain(db) {
+            return Math.pow(10, db / 20);
+        }
+
+        function setupBackgroundMusicNormalizer() {
+            if (!state.audioCtx || !state.bgMusic || state.bgMusicNodeReady) return;
+
+            try {
+                const source = state.audioCtx.createMediaElementSource(state.bgMusic);
+                const preGain = state.audioCtx.createGain();
+                const compressor = state.audioCtx.createDynamicsCompressor();
+                const limiter = state.audioCtx.createDynamicsCompressor();
+                const postGain = state.audioCtx.createGain();
+
+                // Pull normalized files down before dynamics.
+                preGain.gain.value = dbToGain(-14);
+
+                compressor.threshold.value = -22;
+                compressor.knee.value = 16;
+                compressor.ratio.value = 5;
+                compressor.attack.value = 0.008;
+                compressor.release.value = 0.2;
+
+                // Final peak limiter.
+                limiter.threshold.value = -1.5;
+                limiter.knee.value = 0;
+                limiter.ratio.value = 20;
+                limiter.attack.value = 0.001;
+                limiter.release.value = 0.08;
+
+                postGain.gain.value = dbToGain(-2);
+
+                source.connect(preGain);
+                preGain.connect(compressor);
+                compressor.connect(limiter);
+                limiter.connect(postGain);
+                postGain.connect(state.audioCtx.destination);
+
+                state.bgMusicSource = source;
+                state.bgMusicGain = postGain;
+                state.bgMusicCompressor = compressor;
+                state.bgMusicLimiter = limiter;
+                state.bgMusicNodeReady = true;
+
+                // Unity here; music level comes from the node chain.
+                state.bgMusic.volume = 1;
+            } catch (e) {
+                // Fallback for environments that block media-element source nodes.
+                state.bgMusicNodeReady = false;
+                state.bgMusic.volume = 0.08;
+                console.log('Music normalizer unavailable, using fallback volume.');
+            }
+        }
+
         function initBackgroundMusic() {
             state.bgMusic = document.getElementById('bg-music');
-            state.bgMusic.volume = 0.12;
+            state.bgMusic.volume = 0.08;
+            setupBackgroundMusicNormalizer();
         }
 
         function startBackgroundMusic() {
             if (!state.bgMusic || !state.musicEnabled || state.musicStarted) return;
+
+            if (!state.audioCtx) initAudio();
+            if (state.audioCtx && state.audioCtx.state === 'suspended') {
+                state.audioCtx.resume().catch(() => {});
+            }
+
             state.bgMusic.play().then(() => {
                 state.musicStarted = true;
             }).catch(e => {
@@ -1998,6 +2068,9 @@
             if (state.musicEnabled) {
                 icon.textContent = '♪';
                 text.textContent = 'ON';
+                if (state.audioCtx && state.audioCtx.state === 'suspended') {
+                    state.audioCtx.resume().catch(() => {});
+                }
                 if (state.musicStarted) {
                     state.bgMusic.play();
                 } else {
@@ -2024,6 +2097,9 @@
 
         function resumeBackgroundMusic() {
             if (state.bgMusic && state.musicEnabled && state.musicStarted) {
+                if (state.audioCtx && state.audioCtx.state === 'suspended') {
+                    state.audioCtx.resume().catch(() => {});
+                }
                 state.bgMusic.play();
             }
         }

@@ -64,6 +64,7 @@ Mobile:
 - Local leaderboard and persistent stats
 - Optional Firebase-backed leaderboard reads
 - Procedural SFX via Web Audio API + looping background track
+- Background music loudness control via Web Audio pre-gain + compressor + limiter
 
 ## Security Deployment Note
 
