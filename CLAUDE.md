@@ -96,6 +96,10 @@ When changing entity visuals, update the logo definitions and shared renderer in
 - Enemy movement cadence depends on difficulty interval.
 - Attack can remove adjacent hazards/enemies.
 - Tutorial and main game flows are separate entry paths.
+- Background music uses a dedicated Web Audio chain separate from SFX:
+  - pre-gain -> compressor -> limiter -> post-gain
+  - tuning constants live near `// ===== BACKGROUND MUSIC =====` in `index.html`
+  - keep fallback `HTMLAudioElement.volume` audible in case media-node setup fails
 
 ## Leaderboard and Persistence
 
