@@ -1948,7 +1948,12 @@
         }
 
         function playTone(freq, duration, type = 'sine', volume = 0.04) {
-            if (!state.sfxEnabled || !state.audioCtx) return;
+            if (!state.sfxEnabled) return;
+            if (!state.audioCtx) initAudio();
+            if (state.audioCtx && state.audioCtx.state === 'suspended') {
+                state.audioCtx.resume().catch(() => {});
+            }
+            if (!state.audioCtx) return;
             try {
                 const osc = state.audioCtx.createOscillator();
                 const gain = state.audioCtx.createGain();
@@ -1998,7 +2003,7 @@
                 const postGain = state.audioCtx.createGain();
 
                 // Pull normalized files down before dynamics.
-                preGain.gain.value = dbToGain(-14);
+                preGain.gain.value = dbToGain(-10);
 
                 compressor.threshold.value = -22;
                 compressor.knee.value = 16;
@@ -2013,7 +2018,7 @@
                 limiter.attack.value = 0.001;
                 limiter.release.value = 0.08;
 
-                postGain.gain.value = dbToGain(-2);
+                postGain.gain.value = dbToGain(-1);
 
                 source.connect(preGain);
                 preGain.connect(compressor);
@@ -2032,14 +2037,14 @@
             } catch (e) {
                 // Fallback for environments that block media-element source nodes.
                 state.bgMusicNodeReady = false;
-                state.bgMusic.volume = 0.08;
+                state.bgMusic.volume = 0.18;
                 console.log('Music normalizer unavailable, using fallback volume.');
             }
         }
 
         function initBackgroundMusic() {
             state.bgMusic = document.getElementById('bg-music');
-            state.bgMusic.volume = 0.08;
+            state.bgMusic.volume = 0.18;
             setupBackgroundMusicNormalizer();
         }
 
@@ -4231,10 +4236,7 @@
             }
 
             // Music toggle button
-            addTapHandler(document.getElementById('music-toggle'), () => {
-                if (!state.musicStarted) startBackgroundMusic();
-                toggleBackgroundMusic();
-            });
+            addTapHandler(document.getElementById('music-toggle'), toggleBackgroundMusic);
 
             // Leaderboard buttons
             addTapHandler(document.getElementById('leaderboard-btn'), showLeaderboard);
